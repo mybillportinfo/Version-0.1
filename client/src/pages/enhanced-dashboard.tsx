@@ -11,7 +11,7 @@ import { auth } from "../../../lib/firebaseConfig.js";
 // @ts-ignore
 import { logoutUser } from "../../../services/auth.js";
 // @ts-ignore
-import { addBill, getBills, type FirestoreBill } from "../../../services/bills.ts";
+import { addBill, getBills, type FirestoreBill } from "../../../services/bills";
 
 export default function EnhancedDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -20,7 +20,7 @@ export default function EnhancedDashboard() {
 
   // Authentication check
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser: any) => {
       if (currentUser) {
         setUser(currentUser);
       } else {
@@ -42,7 +42,7 @@ export default function EnhancedDashboard() {
   });
 
   // Fetch bills from PostgreSQL
-  const { data: postgresqlBills = [], isLoading: isLoadingPostgres } = useQuery({
+  const { data: postgresqlBills = [], isLoading: isLoadingPostgres } = useQuery<any[]>({
     queryKey: ["/api/bills"],
     enabled: !!user,
   });
@@ -73,8 +73,7 @@ export default function EnhancedDashboard() {
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       priority: "medium",
       category: "utilities",
-      isPaid: false,
-      userId: user?.uid || "anonymous"
+      isPaid: false
     };
 
     addFirebaseBillMutation.mutate(sampleBill);
@@ -144,20 +143,14 @@ export default function EnhancedDashboard() {
       {/* Content */}
       <div className="flex-1 p-4 pb-20 overflow-y-auto bg-gray-50">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="mb-6">
           <SummaryCard
-            title="Total Bills"
-            value={allBills.length.toString()}
-            subtitle="Active bills"
-            icon={Calendar}
-            color="blue"
-          />
-          <SummaryCard
-            title="Amount Due"
-            value={`$${allBills.reduce((sum, bill) => sum + (bill.amount || 0), 0).toFixed(2)}`}
-            subtitle="This month"
-            icon={DollarSign}
-            color="green"
+            totalOutstanding={allBills.reduce((sum, bill) => sum + (bill.amount || 0), 0)}
+            priorityCounts={{
+              urgent: allBills.filter(bill => bill.priority === 'urgent').length,
+              medium: allBills.filter(bill => bill.priority === 'medium').length,
+              low: allBills.filter(bill => bill.priority === 'low').length
+            }}
           />
         </div>
 
@@ -191,7 +184,7 @@ export default function EnhancedDashboard() {
                     <div>
                       <h4 className="font-medium text-gray-800">{bill.companyName}</h4>
                       <p className="text-sm text-gray-600">
-                        Due: {bill.dueDate?.toDate?.()?.toLocaleDateString() || 'No date'}
+                        Due: {bill.dueDate instanceof Date ? bill.dueDate.toLocaleDateString() : 'No date'}
                       </p>
                       <p className="text-sm text-gray-500">Priority: {bill.priority}</p>
                     </div>
