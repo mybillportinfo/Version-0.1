@@ -1,11 +1,18 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { seedDatabase } from "./seed";
 import { insertBillSchema, insertPaymentSchema, insertRewardSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const DEMO_USER_ID = "demo-user-1"; // For demo purposes
+  // Seed database and get demo user ID
+  let DEMO_USER_ID = await seedDatabase();
+  if (!DEMO_USER_ID) {
+    // If seeding was skipped, get existing demo user
+    const demoUser = await storage.getUserByUsername("johndoe");
+    DEMO_USER_ID = demoUser?.id || "demo-user-1";
+  }
 
   // Get user bills
   app.get("/api/bills", async (req, res) => {

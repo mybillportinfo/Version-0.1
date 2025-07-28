@@ -29,8 +29,9 @@ Preferred communication style: Simple, everyday language.
 - **ORM**: Drizzle ORM for type-safe database operations
 - **Database**: PostgreSQL (configured via DATABASE_URL environment variable)
 - **Connection**: Neon Database serverless driver for PostgreSQL
-- **Development Storage**: In-memory storage implementation for demo purposes
+- **Production Storage**: PostgreSQL database with automatic seeding of demo data
 - **Schema Management**: Drizzle Kit for migrations and schema management
+- **Data Seeding**: Automatic initialization with demo user and sample bills on first run
 
 ## Key Components
 
@@ -56,9 +57,10 @@ Preferred communication style: Simple, everyday language.
 
 1. **Client Requests**: React components use TanStack Query for data fetching
 2. **API Layer**: Express routes handle CRUD operations for bills, payments, and rewards
-3. **Storage Layer**: Abstract storage interface allows switching between in-memory demo data and PostgreSQL
-4. **Real-time Updates**: Automatic query invalidation keeps UI synchronized with data changes
-5. **Error Handling**: Comprehensive error boundaries and user feedback through toast notifications
+3. **Database Layer**: PostgreSQL database with Drizzle ORM for type-safe operations
+4. **Auto-Seeding**: Database automatically initializes with demo data on first run
+5. **Real-time Updates**: Automatic query invalidation keeps UI synchronized with data changes
+6. **Error Handling**: Comprehensive error boundaries and user feedback through toast notifications
 
 ## External Dependencies
 
@@ -100,3 +102,12 @@ Preferred communication style: Simple, everyday language.
 - **Performance**: Lazy loading and optimized bundle splitting
 
 The application follows modern web development best practices with a focus on type safety, user experience, and maintainable code architecture. The modular design allows for easy testing and future enhancements while maintaining a clean separation of concerns between the frontend and backend layers.
+
+## Recent Changes
+
+### Database Integration (July 28, 2025)
+- **Migrated from in-memory storage to PostgreSQL database**
+- **Added automatic database seeding with demo data**
+- **Implemented DatabaseStorage class using Drizzle ORM**
+- **All data now persists between application restarts**
+- **Ready for production deployment with real user data**
