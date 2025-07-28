@@ -9,11 +9,15 @@ import Payments from "./pages/payments";
 import Rewards from "./pages/rewards";
 import Profile from "./pages/profile";
 import FirebaseTest from "./pages/firebase-test";
+import Signup from "./pages/signup";
+import Login from "./pages/login";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/login" component={Login} />
       <Route path="/firebase-test" component={FirebaseTest} />
       <Route path="/payments" component={Payments} />
       <Route path="/rewards" component={Rewards} />
