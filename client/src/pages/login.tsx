@@ -1,11 +1,12 @@
 import { useState } from "react";
 // @ts-ignore
-import { loginUser } from "../../../services/auth.js";
+import { loginUser, resetPassword } from "../../../services/auth.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -21,6 +22,23 @@ export default function Login() {
       alert(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert("Please enter your email address first");
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+      await resetPassword(email);
+      alert("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -73,6 +91,17 @@ export default function Login() {
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
+
+          {/* Forgot Password */}
+          <div className="text-center">
+            <button
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+            >
+              {resetLoading ? "Sending..." : "Forgot your password?"}
+            </button>
+          </div>
         </div>
 
         {/* Signup Link */}

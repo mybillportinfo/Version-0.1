@@ -136,3 +136,5 @@ The application follows modern web development best practices with a focus on ty
 - **Production-ready build system and deployment**
 - **TypeScript errors resolved with proper imports**
 - **ZIP export created for project distribution**
+- **Password reset functionality with Firebase Auth**
+- **Dedicated forgot password page with email verification**

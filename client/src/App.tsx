@@ -13,6 +13,7 @@ import Signup from "./pages/signup";
 import Login from "./pages/login";
 import AuthDashboard from "./pages/auth-dashboard";
 import EnhancedDashboard from "./pages/enhanced-dashboard";
+import ForgotPassword from "./pages/forgot-password";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/" component={EnhancedDashboard} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/dashboard" component={AuthDashboard} />
       <Route path="/enhanced-dashboard" component={EnhancedDashboard} />
       <Route path="/firebase-test" component={FirebaseTest} />
