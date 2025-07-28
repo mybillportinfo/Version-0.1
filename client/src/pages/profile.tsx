@@ -1,4 +1,4 @@
-import BottomNavigation from "@/components/bottom-navigation";
+import BottomNavigation from "../components/bottom-navigation";
 import { User, Settings, Bell, CreditCard, Shield, HelpCircle, LogOut } from "lucide-react";
 
 export default function Profile() {

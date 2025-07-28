@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Bot } from "lucide-react";
-import BillItem from "@/components/bill-item";
-import SummaryCard from "@/components/summary-card";
-import QuickActions from "@/components/quick-actions";
-import BottomNavigation from "@/components/bottom-navigation";
+import BillItem from "../components/bill-item";
+import SummaryCard from "../components/summary-card";
+import QuickActions from "../components/quick-actions";
+import BottomNavigation from "../components/bottom-navigation";
 import { Bill } from "@shared/schema";
 
 export default function Dashboard() {

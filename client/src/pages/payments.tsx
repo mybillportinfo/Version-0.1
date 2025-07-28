@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import BottomNavigation from "@/components/bottom-navigation";
+import BottomNavigation from "../components/bottom-navigation";
 import { Payment } from "@shared/schema";
 import { format } from "date-fns";
 

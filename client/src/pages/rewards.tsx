@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import BottomNavigation from "@/components/bottom-navigation";
+import BottomNavigation from "../components/bottom-navigation";
 import { Reward } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
