@@ -161,15 +161,24 @@ export default function StableDashboard() {
             <Home className="w-5 h-5 mb-1" />
             <span className="text-xs font-semibold">Home</span>
           </button>
-          <button className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600">
+          <button 
+            onClick={() => window.location.href = "/payments"}
+            className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600"
+          >
             <CreditCard className="w-5 h-5 mb-1" />
             <span className="text-xs font-medium">Payments</span>
           </button>
-          <button className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600">
+          <button 
+            onClick={() => window.location.href = "/rewards"}
+            className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600"
+          >
             <Gift className="w-5 h-5 mb-1" />
             <span className="text-xs font-medium">Rewards</span>
           </button>
-          <button className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600">
+          <button 
+            onClick={() => window.location.href = "/profile"}
+            className="flex flex-col items-center py-3 px-4 text-gray-500 hover:text-blue-600"
+          >
             <User className="w-5 h-5 mb-1" />
             <span className="text-xs font-medium">Profile</span>
           </button>
