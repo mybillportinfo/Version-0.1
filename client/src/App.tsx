@@ -24,6 +24,10 @@ import Security from "./pages/security";
 import AppSettings from "./pages/app-settings";
 import AddBill from "./pages/add-bill";
 import BillDetails from "./pages/bill-details";
+import CameraScan from "./pages/camera-scan";
+import AISuggestions from "./pages/ai-suggestions";
+import LiveChat from "./pages/live-chat";
+import AIReminders from "./pages/ai-reminders";
 
 function Router() {
   return (
@@ -46,6 +50,10 @@ function Router() {
       <Route path="/app-settings" component={AppSettings} />
       <Route path="/add-bill" component={AddBill} />
       <Route path="/bill-details/:id" component={BillDetails} />
+      <Route path="/camera-scan" component={CameraScan} />
+      <Route path="/ai-suggestions" component={AISuggestions} />
+      <Route path="/live-chat" component={LiveChat} />
+      <Route path="/ai-reminders" component={AIReminders} />
       <Route component={NotFound} />
     </Switch>
   );
