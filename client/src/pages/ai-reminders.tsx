@@ -92,7 +92,7 @@ export default function AIReminders() {
   };
 
   const handleSaveSettings = () => {
-    alert("Your AI reminder preferences have been saved! 🎉\n\nYou'll start receiving personalized, motivational notifications based on your settings. Maya will send you sweet and encouraging reminders to keep you motivated on your financial journey!");
+    alert("Your AI reminder preferences have been saved!\n\nYou'll start receiving personalized, motivational notifications based on your settings. Our AI assistants will send you sweet and encouraging reminders to keep you motivated on your financial journey!");
   };
 
   const getMoodColor = (mood: string) => {
@@ -149,13 +149,13 @@ export default function AIReminders() {
               <Heart className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Meet Maya</h2>
-              <p className="text-white/80">Your caring AI assistant</p>
+              <h2 className="text-xl font-bold">AI Assistants</h2>
+              <p className="text-white/80">Your caring support team</p>
             </div>
           </div>
 
           <p className="text-white/90 text-sm">
-            Maya sends personalized, encouraging notifications to keep you motivated and on track with your financial goals. She celebrates your wins and gently reminds you about important dates! 💕
+            Our AI assistants (Alex, Jordan, Sam, Casey, Riley, Taylor) send personalized, encouraging notifications to keep you motivated and on track with your financial goals. They celebrate your wins and gently remind you about important dates!
           </p>
         </div>
 
@@ -306,7 +306,7 @@ export default function AIReminders() {
             <div>
               <p className="text-sm font-semibold text-purple-800">AI Personalization</p>
               <p className="text-sm text-purple-700 mt-1">
-                Maya learns your preferences and adjusts her communication style to be more encouraging and supportive over time. The more you interact, the better she gets at motivating you! 💜
+                Our AI assistants learn your preferences and adjust their communication style to be more encouraging and supportive over time. The more you interact, the better they get at motivating you!
               </p>
             </div>
           </div>

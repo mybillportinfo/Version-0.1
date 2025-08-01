@@ -77,8 +77,8 @@ export default function CameraScan() {
             </button>
             <img src="/logo.png" alt="MyBillPort Logo" className="w-8 h-8 object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-gray-800">AI Bill Scanner</h1>
-              <p className="text-sm text-gray-600">Scan bills with your camera</p>
+              <h1 className="text-xl font-bold text-gray-800">**AI Bill Scanner**</h1>
+              <p className="text-sm text-gray-600">**Scan bills with your camera**</p>
             </div>
           </div>
         </div>

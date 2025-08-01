@@ -2,11 +2,26 @@ import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Bot, User, Smile, Paperclip, Phone, MessageCircle } from "lucide-react";
 
 export default function LiveChat() {
+  // Rotating AI assistant names
+  const aiAssistants = [
+    { name: "Alex", personality: "friendly and helpful" },
+    { name: "Jordan", personality: "analytical and precise" },
+    { name: "Sam", personality: "encouraging and supportive" },
+    { name: "Casey", personality: "knowledgeable and patient" },
+    { name: "Riley", personality: "energetic and motivating" },
+    { name: "Taylor", personality: "calm and reassuring" }
+  ];
+
+  // Select random assistant for this session
+  const [currentAssistant] = useState(() => 
+    aiAssistants[Math.floor(Math.random() * aiAssistants.length)]
+  );
+
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: "bot",
-      message: "Hello! I'm Maya, your MyBillPort assistant. How can I help you save money on your bills today? 😊",
+      message: `Hello! I'm ${currentAssistant.name}, your MyBillPort assistant. How can I help you save money on your bills today?`,
       timestamp: new Date().toLocaleTimeString(),
       type: "text"
     },
@@ -80,7 +95,7 @@ export default function LiveChat() {
     } else if (message.includes("compare") || message.includes("provider") || message.includes("📊")) {
       response = "I can help you compare Canadian providers! Here are current top options:\n\n📱 **Mobile:**\n• Rogers, Bell, Telus (Premium)\n• Fido, Koodo, Virgin (Mid-range)\n• Freedom, Public Mobile (Budget)\n\n⚡ **Utilities:**\n• Hydro One, BC Hydro, SaskPower\n• Enbridge, Union Gas\n\n💳 **Banking:**\n• RBC, TD, BMO, Scotiabank, CIBC\n• Tangerine, PC Financial (Online)\n\nWhich category would you like detailed comparisons for?";
     } else if (message.includes("hello") || message.includes("hi") || message.includes("hey")) {
-      response = "Hello! Nice to meet you! 👋\n\nI'm Maya, your personal bill management assistant. I'm here 24/7 to help you:\n\n💰 Save money on bills\n📱 Manage payments\n🔍 Find better deals\n📊 Track spending\n🤖 Automate processes\n\nWhat would you like to work on today?";
+      response = `Hello! Nice to meet you!\n\nI'm ${currentAssistant.name}, your personal bill management assistant. I'm here 24/7 to help you:\n\n💰 Save money on bills\n📱 Manage payments\n🔍 Find better deals\n📊 Track spending\n🤖 Automate processes\n\nWhat would you like to work on today?`;
     } else {
       response = "I understand you're asking about: \"" + userMessage + "\"\n\nLet me help you with that! Based on your MyBillPort account, I can provide personalized assistance.\n\nWould you like me to:\n• Check your current bills for savings opportunities\n• Help you manage payments and due dates\n• Find better deals from Canadian providers\n• Set up automation features\n\nJust let me know what specific area you'd like help with! 😊";
     }
@@ -111,7 +126,7 @@ export default function LiveChat() {
               <img src="/logo.png" alt="MyBillPort Logo" className="w-8 h-8 object-contain" />
               <div>
                 <h1 className="text-xl font-bold text-gray-800">Live Chat</h1>
-                <p className="text-sm text-gray-600">Maya • AI Assistant</p>
+                <p className="text-sm text-gray-600">{currentAssistant.name} • AI Assistant</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">

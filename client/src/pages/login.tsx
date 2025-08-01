@@ -86,6 +86,21 @@ export default function Login() {
             />
           </div>
 
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+              <label className="ml-2 text-sm text-gray-600">Remember me</label>
+            </div>
+            <button
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+            >
+              {resetLoading ? "Sending..." : "Forgot your password?"}
+            </button>
+          </div>
+
           <button
             onClick={handleLogin}
             disabled={loading}
@@ -94,15 +109,33 @@ export default function Login() {
             {loading ? "Signing In..." : "Sign In"}
           </button>
 
-          {/* Forgot Password */}
-          <div className="text-center">
-            <button
-              onClick={handleForgotPassword}
-              disabled={resetLoading}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
-            >
-              {resetLoading ? "Sending..." : "Forgot your password?"}
-            </button>
+          {/* Biometric Authentication Options */}
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-sm text-gray-600 mb-3 text-center">Or sign in with biometric authentication:</p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => alert("Face ID authentication initiated!\n\nPlease look at your camera and follow the on-screen prompts to verify your identity using facial recognition.")}
+                className="flex items-center justify-center space-x-2 bg-green-50 text-green-700 py-3 px-4 rounded-xl font-medium hover:bg-green-100 transition-colors border border-green-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Face ID</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => alert("Fingerprint authentication initiated!\n\nPlease place your finger on the sensor or use your device's built-in fingerprint scanner to verify your identity.")}
+                className="flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 py-3 px-4 rounded-xl font-medium hover:bg-blue-100 transition-colors border border-blue-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span>Fingerprint</span>
+              </button>
+            </div>
           </div>
         </div>
 

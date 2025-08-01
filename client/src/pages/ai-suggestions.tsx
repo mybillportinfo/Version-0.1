@@ -116,8 +116,8 @@ export default function AISuggestions() {
             </button>
             <img src="/logo.png" alt="MyBillPort Logo" className="w-8 h-8 object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-gray-800">AI Suggestions</h1>
-              <p className="text-sm text-gray-600">Smart ways to reduce your bills</p>
+              <h1 className="text-xl font-bold text-gray-800">**AI Suggestions**</h1>
+              <p className="text-sm text-gray-600">**Smart ways to reduce your bills**</p>
             </div>
           </div>
         </div>
