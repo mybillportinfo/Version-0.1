@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Home, CreditCard, Gift, User } from "lucide-react";
 
 export default function BottomNavigation() {
@@ -18,9 +18,9 @@ export default function BottomNavigation() {
           {navItems.map((item) => {
             const isActive = location === item.path;
             return (
-              <button
+              <Link
                 key={item.path}
-                onClick={() => window.location.href = item.path}
+                href={item.path}
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
                   isActive
                     ? "text-blue-600 bg-blue-50"
@@ -29,7 +29,7 @@ export default function BottomNavigation() {
               >
                 <item.icon className="w-5 h-5 mb-1" />
                 <span className="text-xs font-medium">{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </div>
