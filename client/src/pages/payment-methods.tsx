@@ -46,8 +46,11 @@ export default function PaymentMethods() {
   });
 
   const interacSchema = z.object({
+    interacType: z.enum(['send_request', 'receive_email'], { required_error: 'Please select an Interac option' }),
     email: z.string().email('Enter valid email address'),
-    securityQuestion: z.string().min(5, 'Security question is required')
+    securityQuestion: z.string().min(5, 'Security question is required').optional(),
+    receivingEmail: z.string().email('Enter valid receiving email address').optional(),
+    displayName: z.string().min(2, 'Display name is required').optional()
   });
 
   // Create a unified schema that makes all fields optional and validates based on selected type
@@ -58,10 +61,18 @@ export default function PaymentMethods() {
     pin: z.string().optional(),
     holderName: z.string().optional(),
     email: z.string().optional(),
-    securityQuestion: z.string().optional()
+    securityQuestion: z.string().optional(),
+    interacType: z.string().optional(),
+    receivingEmail: z.string().optional(),
+    displayName: z.string().optional()
   }).refine((data) => {
     if (selectedType === 'interac') {
-      return data.email && data.email.includes('@') && data.securityQuestion && data.securityQuestion.length >= 5;
+      if (data.interacType === 'send_request') {
+        return data.email && data.email.includes('@') && data.securityQuestion && data.securityQuestion.length >= 5;
+      } else if (data.interacType === 'receive_email') {
+        return data.receivingEmail && data.receivingEmail.includes('@') && data.displayName && data.displayName.length >= 2;
+      }
+      return false;
     } else if (selectedType === 'gift') {
       return data.cardNumber && data.cardNumber.length >= 10 && 
              data.expiryDate && /^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expiryDate) &&
@@ -86,7 +97,10 @@ export default function PaymentMethods() {
       pin: '',
       holderName: '',
       email: '',
-      securityQuestion: ''
+      securityQuestion: '',
+      interacType: '',
+      receivingEmail: '',
+      displayName: ''
     }
   });
 
@@ -124,6 +138,10 @@ export default function PaymentMethods() {
     let methodName = `New ${typeInfo?.name}`;
     if (data.holderName) {
       methodName = `${data.holderName}'s ${typeInfo?.name}`;
+    } else if (data.interacType === 'send_request' && data.email) {
+      methodName = `Interac Send (${data.email})`;
+    } else if (data.interacType === 'receive_email' && data.displayName) {
+      methodName = `Interac Receive (${data.displayName.toLowerCase().replace(/\s+/g, '.')}.mybillport@interac.ca)`;
     } else if (data.email) {
       methodName = `Interac (${data.email})`;
     }
@@ -285,41 +303,130 @@ export default function PaymentMethods() {
                 <form onSubmit={form.handleSubmit(handleSavePaymentMethod)} className="space-y-4">
                   {selectedType === 'interac' ? (
                     <>
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email Address</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                type="email"
-                                placeholder="Enter email address"
-                                data-testid="input-email"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="securityQuestion"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Security Question</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="Enter security question"
-                                data-testid="input-security-question"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="space-y-3 mb-4">
+                        <FormLabel>Interac e-Transfer Option</FormLabel>
+                        <div className="grid grid-cols-1 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => form.setValue('interacType', 'send_request')}
+                            className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                              form.watch('interacType') === 'send_request' 
+                                ? 'border-blue-500 bg-blue-50' 
+                                : 'border-gray-200 bg-white'
+                            }`}
+                            data-testid="button-send-request"
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                                <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800">Send Payment Requests</p>
+                                <p className="text-sm text-gray-600">Request payments from others via email</p>
+                              </div>
+                            </div>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => form.setValue('interacType', 'receive_email')}
+                            className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                              form.watch('interacType') === 'receive_email' 
+                                ? 'border-green-500 bg-green-50' 
+                                : 'border-gray-200 bg-white'
+                            }`}
+                            data-testid="button-receive-email"
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                                <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800">Unique Receiving Email</p>
+                                <p className="text-sm text-gray-600">Get a dedicated email for receiving payments</p>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {form.watch('interacType') === 'send_request' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Your Email Address</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="email"
+                                    placeholder="Enter your email address"
+                                    data-testid="input-sender-email"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="securityQuestion"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Default Security Question</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="e.g., What is your pet's name?"
+                                    data-testid="input-security-question"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      {form.watch('interacType') === 'receive_email' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="displayName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Display Name</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    placeholder="Enter name for MyBillPort account"
+                                    data-testid="input-display-name"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <p className="text-sm font-medium text-green-800">Your Unique Receiving Email:</p>
+                            <p className="text-sm text-green-700 font-mono mt-1">
+                              {form.watch('displayName') 
+                                ? `${form.watch('displayName').toLowerCase().replace(/\s+/g, '.')}.mybillport@interac.ca`
+                                : 'your.name.mybillport@interac.ca'
+                              }
+                            </p>
+                            <p className="text-xs text-green-600 mt-2">
+                              Share this email with anyone who needs to send you money via Interac e-Transfer
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>

@@ -195,3 +195,15 @@ The application follows modern web development best practices with a focus on ty
 - **Real Anthropic API integration working for bill scanning**
 - **Plaid sandbox integration ready for bank connectivity**
 - **Complete bill management platform ready for www.mybillport.com**
+
+### Enhanced Profile and Payment Features (August 14, 2025)
+- **Added comprehensive profile picture upload functionality with camera capture and gallery selection**
+- **Implemented editable profile page with personal information fields (name, email, phone number)**
+- **Enhanced bill splitting feature with purple "Split Bills" button integrated in dashboard quick actions**
+- **Added profile access button in main dashboard header for easy navigation**
+- **Integrated React Hook Form with proper validation for all form fields and user data**
+- **Enhanced Interac e-Transfer payment method with two distinct options:**
+  - **Send Payment Requests: Users can request payments from others via email with security questions**
+  - **Unique Receiving Email: Users get dedicated email addresses (format: name.mybillport@interac.ca) for receiving payments**
+- **All profile and payment features fully integrated with Firebase authentication system**
+- **Mobile-optimized interface with proper form validation and user feedback**
