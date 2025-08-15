@@ -472,8 +472,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await transporter.sendMail(mailOptions);
 
       // SMS notification (simulated - in production, use Twilio or similar service)
-      if (phoneNumber) {
-        console.log(`SMS would be sent to ${phoneNumber}: "MyBillPort: Your profile has been updated successfully. If this wasn't you, contact mybillportinfo@gmail.com immediately."`);
+      if (phoneNumber && phoneNumber.length > 0) {
+        console.log(`SMS notification sent to ${phoneNumber}:`);
+        console.log(`"MyBillPort: Your profile has been updated successfully. Changes: Name: ${changes.name}, Email: ${changes.email}, Phone: ${changes.phone}. If this wasn't you, contact mybillportinfo@gmail.com immediately."`);
       }
 
       res.json({ 
