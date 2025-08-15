@@ -11,6 +11,7 @@ import {
   AccountsGetRequest,
 } from 'plaid';
 import { scanBillImage } from './ai-scanner';
+import nodemailer from 'nodemailer';
 
 // Store access tokens in memory for demo purposes
 // In production, store these securely in your database
@@ -315,6 +316,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Plaid Accounts Error:', error);
       res.status(500).json({ 
         error: "Unable to fetch accounts",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Interac e-Transfer payment request endpoint
+  app.post("/api/interac/send-request", async (req, res) => {
+    try {
+      const { senderEmail, recipientEmail, amount, securityQuestion, message } = req.body;
+
+      // Validate input
+      if (!senderEmail || !recipientEmail || !amount || !securityQuestion) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Create a simple email transporter using Gmail SMTP
+      // For production, you would use a proper email service like SendGrid, AWS SES, etc.
+      const transporter = nodemailer.createTransporter({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'noreply.mybillport@gmail.com',
+          pass: 'mybillport2024!' // In production, use environment variables
+        }
+      });
+
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">💰 Interac e-Transfer Request</h1>
+            <p style="margin: 10px 0 0 0;">MyBillPort Payment Request</p>
+          </div>
+          
+          <div style="padding: 30px; background: white;">
+            <h2 style="color: #333; margin-top: 0;">Payment Request Details</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Amount:</strong> $${amount.toFixed(2)} CAD</p>
+              <p><strong>From:</strong> ${senderEmail}</p>
+              <p><strong>Security Question:</strong> ${securityQuestion}</p>
+              ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+            </div>
+            
+            <h3 style="color: #333;">Next Steps:</h3>
+            <ol style="color: #666; line-height: 1.6;">
+              <li>Log into your online banking or mobile banking app</li>
+              <li>Navigate to Interac e-Transfer</li>
+              <li>Send money to: <strong>${senderEmail}</strong></li>
+              <li>Enter the amount: <strong>$${amount.toFixed(2)} CAD</strong></li>
+              <li>Use the security question: <strong>${securityQuestion}</strong></li>
+              <li>Enter the answer you know for this security question</li>
+            </ol>
+            
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #1976d2;"><strong>💡 Tip:</strong> Make sure you know the answer to the security question before sending!</p>
+            </div>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 20px; text-align: center; color: #666;">
+            <p style="margin: 0;">This request was sent through MyBillPort</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px;">If you didn't expect this request, please contact the sender.</p>
+          </div>
+        </div>
+      `;
+
+      const mailOptions = {
+        from: 'MyBillPort <noreply.mybillport@gmail.com>',
+        to: recipientEmail,
+        subject: `💰 Payment Request: $${amount.toFixed(2)} CAD from ${senderEmail}`,
+        html: emailContent
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.json({ 
+        success: true, 
+        message: `Payment request sent to ${recipientEmail}`,
+        details: {
+          amount: amount,
+          recipient: recipientEmail,
+          sender: senderEmail
+        }
+      });
+
+    } catch (error) {
+      console.error('Email sending error:', error);
+      res.status(500).json({ 
+        error: "Failed to send payment request email",
         details: error instanceof Error ? error.message : "Unknown error"
       });
     }

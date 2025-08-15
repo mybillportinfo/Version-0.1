@@ -46,11 +46,11 @@ export default function PaymentMethods() {
   });
 
   const interacSchema = z.object({
-    interacType: z.enum(['send_request', 'receive_email'], { required_error: 'Please select an Interac option' }),
     email: z.string().email('Enter valid email address'),
-    securityQuestion: z.string().min(5, 'Security question is required').optional(),
-    receivingEmail: z.string().email('Enter valid receiving email address').optional(),
-    displayName: z.string().min(2, 'Display name is required').optional()
+    securityQuestion: z.string().min(5, 'Security question is required'),
+    recipientEmail: z.string().email('Enter recipient email address'),
+    amount: z.string().min(1, 'Enter payment amount'),
+    message: z.string().optional()
   });
 
   // Create a unified schema that makes all fields optional and validates based on selected type
@@ -62,17 +62,15 @@ export default function PaymentMethods() {
     holderName: z.string().optional(),
     email: z.string().optional(),
     securityQuestion: z.string().optional(),
-    interacType: z.string().optional(),
-    receivingEmail: z.string().optional(),
-    displayName: z.string().optional()
+    recipientEmail: z.string().optional(),
+    amount: z.string().optional(),
+    message: z.string().optional()
   }).refine((data) => {
     if (selectedType === 'interac') {
-      if (data.interacType === 'send_request') {
-        return data.email && data.email.includes('@') && data.securityQuestion && data.securityQuestion.length >= 5;
-      } else if (data.interacType === 'receive_email') {
-        return data.receivingEmail && data.receivingEmail.includes('@') && data.displayName && data.displayName.length >= 2;
-      }
-      return false;
+      return data.email && data.email.includes('@') && 
+             data.securityQuestion && data.securityQuestion.length >= 5 &&
+             data.recipientEmail && data.recipientEmail.includes('@') &&
+             data.amount && parseFloat(data.amount) > 0;
     } else if (selectedType === 'gift') {
       return data.cardNumber && data.cardNumber.length >= 10 && 
              data.expiryDate && /^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expiryDate) &&
@@ -98,9 +96,9 @@ export default function PaymentMethods() {
       holderName: '',
       email: '',
       securityQuestion: '',
-      interacType: '',
-      receivingEmail: '',
-      displayName: ''
+      recipientEmail: '',
+      amount: '',
+      message: ''
     }
   });
 
@@ -123,27 +121,54 @@ export default function PaymentMethods() {
     setShowAddMethod(true);
   };
 
-  const handleSavePaymentMethod = (data: any) => {
+  const handleSavePaymentMethod = async (data: any) => {
     const typeInfo = paymentTypes.find(t => t.id === selectedType);
     
+    // Handle Interac payment request
+    if (selectedType === 'interac') {
+      try {
+        const response = await fetch('/api/interac/send-request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            senderEmail: data.email,
+            recipientEmail: data.recipientEmail,
+            amount: parseFloat(data.amount),
+            securityQuestion: data.securityQuestion,
+            message: data.message || 'Payment request from MyBillPort'
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`Payment request sent successfully!\n\nA payment request for $${data.amount} CAD has been sent to ${data.recipientEmail}. They will receive an email with instructions to complete the payment.`);
+        } else {
+          alert(`Failed to send payment request: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`Error sending payment request: ${error.message}`);
+      }
+      
+      setShowAddMethod(false);
+      setSelectedType('');
+      form.reset();
+      return;
+    }
+    
+    // Handle other payment methods
     // Extract last 4 digits from card number or use placeholder for other types
     let last4 = '0000';
     if (data.cardNumber) {
       last4 = data.cardNumber.slice(-4);
-    } else if (data.email) {
-      last4 = data.email.slice(-4);
     }
 
     // Generate more descriptive names based on input
     let methodName = `New ${typeInfo?.name}`;
     if (data.holderName) {
       methodName = `${data.holderName}'s ${typeInfo?.name}`;
-    } else if (data.interacType === 'send_request' && data.email) {
-      methodName = `Interac Send (${data.email})`;
-    } else if (data.interacType === 'receive_email' && data.displayName) {
-      methodName = `Interac Receive (${data.displayName.toLowerCase().replace(/\s+/g, '.')}.mybillport@interac.ca)`;
-    } else if (data.email) {
-      methodName = `Interac (${data.email})`;
     }
 
     const newMethod = {
@@ -303,130 +328,105 @@ export default function PaymentMethods() {
                 <form onSubmit={form.handleSubmit(handleSavePaymentMethod)} className="space-y-4">
                   {selectedType === 'interac' ? (
                     <>
-                      <div className="space-y-3 mb-4">
-                        <FormLabel>Interac e-Transfer Option</FormLabel>
-                        <div className="grid grid-cols-1 gap-3">
-                          <button
-                            type="button"
-                            onClick={() => form.setValue('interacType', 'send_request')}
-                            className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                              form.watch('interacType') === 'send_request' 
-                                ? 'border-blue-500 bg-blue-50' 
-                                : 'border-gray-200 bg-white'
-                            }`}
-                            data-testid="button-send-request"
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-800">Send Payment Requests</p>
-                                <p className="text-sm text-gray-600">Request payments from others via email</p>
-                              </div>
-                            </div>
-                          </button>
-                          
-                          <button
-                            type="button"
-                            onClick={() => form.setValue('interacType', 'receive_email')}
-                            className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                              form.watch('interacType') === 'receive_email' 
-                                ? 'border-green-500 bg-green-50' 
-                                : 'border-gray-200 bg-white'
-                            }`}
-                            data-testid="button-receive-email"
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-800">Unique Receiving Email</p>
-                                <p className="text-sm text-gray-600">Get a dedicated email for receiving payments</p>
-                              </div>
-                            </div>
-                          </button>
-                        </div>
+                      <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                        <p className="text-sm font-medium text-blue-800">Send Payment Request</p>
+                        <p className="text-xs text-blue-600 mt-1">Request money from someone via Interac e-Transfer</p>
                       </div>
 
-                      {form.watch('interacType') === 'send_request' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Your Email Address</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    type="email"
-                                    placeholder="Enter your email address"
-                                    data-testid="input-sender-email"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="securityQuestion"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Default Security Question</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    placeholder="e.g., What is your pet's name?"
-                                    data-testid="input-security-question"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Your Email Address</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="email"
+                                placeholder="Enter your email address"
+                                data-testid="input-sender-email"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                      {form.watch('interacType') === 'receive_email' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="displayName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Display Name</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    placeholder="Enter name for MyBillPort account"
-                                    data-testid="input-display-name"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <p className="text-sm font-medium text-green-800">Your Unique Receiving Email:</p>
-                            <p className="text-sm text-green-700 font-mono mt-1">
-                              {form.watch('displayName') 
-                                ? `${form.watch('displayName').toLowerCase().replace(/\s+/g, '.')}.mybillport@interac.ca`
-                                : 'your.name.mybillport@interac.ca'
-                              }
-                            </p>
-                            <p className="text-xs text-green-600 mt-2">
-                              Share this email with anyone who needs to send you money via Interac e-Transfer
-                            </p>
-                          </div>
-                        </>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name="recipientEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Recipient Email Address</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="email"
+                                placeholder="Enter recipient's email address"
+                                data-testid="input-recipient-email"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Amount (CAD)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                placeholder="0.00"
+                                data-testid="input-amount"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="securityQuestion"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Security Question</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder="e.g., What is your pet's name?"
+                                data-testid="input-security-question"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Message (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder="Add a message for the recipient"
+                                data-testid="input-message"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </>
                   ) : (
                     <>
@@ -523,7 +523,7 @@ export default function PaymentMethods() {
                       className="flex-1"
                       data-testid="button-add-method"
                     >
-                      Add Method
+                      {selectedType === 'interac' ? 'Send Request' : 'Add Method'}
                     </Button>
                   </div>
                 </form>
