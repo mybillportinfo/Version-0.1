@@ -46,11 +46,9 @@ export default function PaymentMethods() {
   });
 
   const interacSchema = z.object({
-    email: z.string().email('Enter valid email address'),
-    securityQuestion: z.string().min(5, 'Security question is required'),
-    recipientEmail: z.string().email('Enter recipient email address'),
+    recipientEmail: z.string().email('Enter valid email address'),
     amount: z.string().min(1, 'Enter payment amount'),
-    message: z.string().optional()
+    message: z.string().min(1, 'Message is required')
   });
 
   // Create a unified schema that makes all fields optional and validates based on selected type
@@ -60,17 +58,14 @@ export default function PaymentMethods() {
     cvv: z.string().optional(),
     pin: z.string().optional(),
     holderName: z.string().optional(),
-    email: z.string().optional(),
-    securityQuestion: z.string().optional(),
     recipientEmail: z.string().optional(),
     amount: z.string().optional(),
     message: z.string().optional()
   }).refine((data) => {
     if (selectedType === 'interac') {
-      return data.email && data.email.includes('@') && 
-             data.securityQuestion && data.securityQuestion.length >= 5 &&
-             data.recipientEmail && data.recipientEmail.includes('@') &&
-             data.amount && parseFloat(data.amount) > 0;
+      return data.recipientEmail && data.recipientEmail.includes('@') &&
+             data.amount && parseFloat(data.amount) > 0 &&
+             data.message && data.message.length > 0;
     } else if (selectedType === 'gift') {
       return data.cardNumber && data.cardNumber.length >= 10 && 
              data.expiryDate && /^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expiryDate) &&
@@ -127,29 +122,27 @@ export default function PaymentMethods() {
     // Handle Interac payment request
     if (selectedType === 'interac') {
       try {
-        const response = await fetch('/api/interac/send-request', {
+        const response = await fetch('/api/payment-request/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            senderEmail: data.email,
             recipientEmail: data.recipientEmail,
             amount: parseFloat(data.amount),
-            securityQuestion: data.securityQuestion,
-            message: data.message || 'Payment request from MyBillPort'
+            message: data.message || 'This is for my billboard'
           })
         });
 
         const result = await response.json();
         
         if (response.ok) {
-          alert(`Payment request sent successfully!\n\nA payment request for $${data.amount} CAD has been sent to ${data.recipientEmail}. They will receive an email with instructions to complete the payment.`);
+          alert(`Payment request sent successfully!\n\nA payment request for $${data.amount} CAD has been sent to ${data.recipientEmail}. They will receive an email with payment instructions.`);
         } else {
           alert(`Failed to send payment request: ${result.error || 'Unknown error'}`);
         }
       } catch (error) {
-        alert(`Error sending payment request: ${error.message}`);
+        alert(`Error sending payment request: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       
       setShowAddMethod(false);
@@ -335,34 +328,15 @@ export default function PaymentMethods() {
 
                       <FormField
                         control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Your Email Address</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                type="email"
-                                placeholder="Enter your email address"
-                                data-testid="input-sender-email"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="recipientEmail"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Recipient Email Address</FormLabel>
+                            <FormLabel>Email Address</FormLabel>
                             <FormControl>
                               <Input 
                                 {...field} 
                                 type="email"
-                                placeholder="Enter recipient's email address"
+                                placeholder="Enter email address to request money from"
                                 data-testid="input-recipient-email"
                               />
                             </FormControl>
@@ -376,7 +350,7 @@ export default function PaymentMethods() {
                         name="amount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Amount (CAD)</FormLabel>
+                            <FormLabel>Payment Amount (CAD)</FormLabel>
                             <FormControl>
                               <Input 
                                 {...field} 
@@ -394,32 +368,14 @@ export default function PaymentMethods() {
 
                       <FormField
                         control={form.control}
-                        name="securityQuestion"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Security Question</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="e.g., What is your pet's name?"
-                                data-testid="input-security-question"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="message"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Message (Optional)</FormLabel>
+                            <FormLabel>Message</FormLabel>
                             <FormControl>
                               <Input 
                                 {...field} 
-                                placeholder="Add a message for the recipient"
+                                placeholder="This is for my billboard"
                                 data-testid="input-message"
                               />
                             </FormControl>

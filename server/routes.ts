@@ -321,72 +321,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Interac e-Transfer payment request endpoint
-  app.post("/api/interac/send-request", async (req, res) => {
+  // Simplified payment request endpoint  
+  app.post("/api/payment-request/send", async (req, res) => {
     try {
-      const { senderEmail, recipientEmail, amount, securityQuestion, message } = req.body;
+      const { recipientEmail, amount, message } = req.body;
 
       // Validate input
-      if (!senderEmail || !recipientEmail || !amount || !securityQuestion) {
-        return res.status(400).json({ error: "Missing required fields" });
+      if (!recipientEmail || !amount || !message) {
+        return res.status(400).json({ error: "Missing required fields: email, amount, and message are required" });
       }
 
-      // Create a simple email transporter using Gmail SMTP
-      // For production, you would use a proper email service like SendGrid, AWS SES, etc.
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'mybillportinfo@gmail.com',
-          pass: 'mybillport2024!' // In production, use environment variables
-        }
-      });
-
+      // Simplified email template
       const emailContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">💰 Interac e-Transfer Request</h1>
-            <p style="margin: 10px 0 0 0;">MyBillPort Payment Request</p>
+            <h1 style="margin: 0;">💰 Payment Request</h1>
+            <p style="margin: 10px 0 0 0;">MyBillPort</p>
           </div>
           
           <div style="padding: 30px; background: white;">
-            <h2 style="color: #333; margin-top: 0;">Payment Request Details</h2>
+            <h2 style="color: #333; margin-top: 0;">Payment Request</h2>
             
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Amount:</strong> $${amount.toFixed(2)} CAD</p>
-              <p><strong>From:</strong> ${senderEmail}</p>
-              <p><strong>Security Question:</strong> ${securityQuestion}</p>
-              ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+              <p><strong>Message:</strong> ${message}</p>
             </div>
             
-            <h3 style="color: #333;">Next Steps:</h3>
-            <ol style="color: #666; line-height: 1.6;">
-              <li>Log into your online banking or mobile banking app</li>
-              <li>Navigate to Interac e-Transfer</li>
-              <li>Send money to: <strong>${senderEmail}</strong></li>
-              <li>Enter the amount: <strong>$${amount.toFixed(2)} CAD</strong></li>
-              <li>Use the security question: <strong>${securityQuestion}</strong></li>
-              <li>Enter the answer you know for this security question</li>
-            </ol>
+            <p style="color: #666;">Please send payment via Interac e-Transfer to: <strong>mybillportinfo@gmail.com</strong></p>
             
             <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0; color: #1976d2;"><strong>💡 Tip:</strong> Make sure you know the answer to the security question before sending!</p>
+              <p style="margin: 0; color: #1976d2;"><strong>Instructions:</strong></p>
+              <ol style="color: #1976d2; margin: 10px 0;">
+                <li>Log into your online banking</li>
+                <li>Send Interac e-Transfer</li>
+                <li>To: mybillportinfo@gmail.com</li>
+                <li>Amount: $${amount.toFixed(2)} CAD</li>
+                <li>Security Question: What is this payment for?</li>
+                <li>Answer: billboard</li>
+              </ol>
             </div>
           </div>
           
           <div style="background: #f8f9fa; padding: 20px; text-align: center; color: #666;">
-            <p style="margin: 0;">This request was sent through MyBillPort</p>
-            <p style="margin: 5px 0 0 0; font-size: 12px;">If you didn't expect this request, please contact the sender.</p>
+            <p style="margin: 0;">MyBillPort Payment Request</p>
             <p style="margin: 5px 0 0 0; font-size: 12px;">For support, contact us at: mybillportinfo@gmail.com</p>
           </div>
         </div>
       `;
 
+      // Create transporter and send email
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'mybillportinfo@gmail.com',
+          pass: 'mybillport2024!'
+        }
+      });
+
       const mailOptions = {
         from: 'MyBillPort <mybillportinfo@gmail.com>',
         to: recipientEmail,
-        subject: `💰 Payment Request: $${amount.toFixed(2)} CAD from ${senderEmail}`,
+        subject: `💰 Payment Request: $${amount.toFixed(2)} CAD`,
         html: emailContent
       };
 
@@ -398,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: {
           amount: amount,
           recipient: recipientEmail,
-          sender: senderEmail
+          message: message
         }
       });
 
