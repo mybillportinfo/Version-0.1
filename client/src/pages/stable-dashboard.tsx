@@ -1,74 +1,65 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import BottomNavigation from "../components/bottom-navigation";
 import { Home, CreditCard, Gift, User, LogOut, Zap, Phone, Calendar, AlertCircle, CheckCircle, DollarSign, Plus, Bell, Users } from "lucide-react";
 // @ts-ignore
 import { auth } from "../../../lib/firebaseConfig.js";
 // @ts-ignore
 import { logoutUser } from "../../../services/auth.js";
+import { getBills, type FirestoreBill } from "../../../services/bills";
 
 export default function StableDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sample bill data with clear categories
-  const [bills] = useState([
-    {
-      id: 1,
-      type: "utility",
-      company: "Electric Company",
-      icon: Zap,
-      amount: 125.50,
-      dueDate: "2025-08-05",
-      status: "due_soon",
-      category: "Electricity",
-      color: "yellow"
+  // Firebase bills data
+  const { data: firebaseBills = [], isLoading: billsLoading, error: billsError } = useQuery({
+    queryKey: ["firebase-bills", user?.uid],
+    queryFn: async () => {
+      if (!user?.uid) return [];
+      return getBills(user.uid);
     },
-    {
-      id: 2,
-      type: "phone",
-      company: "Verizon Wireless",
-      icon: Phone,
-      amount: 89.99,
-      dueDate: "2025-08-08",
-      status: "upcoming",
-      category: "Mobile",
-      color: "blue"
-    },
-    {
-      id: 3,
-      type: "credit_card",
-      company: "Chase Visa",
-      icon: CreditCard,
-      amount: 324.75,
-      dueDate: "2025-08-12",
-      status: "upcoming",
-      category: "Credit Card",
-      color: "purple"
-    },
-    {
-      id: 4,
-      type: "utility",
-      company: "Water Department",
-      icon: Home,
-      amount: 67.25,
-      dueDate: "2025-08-15",
-      status: "upcoming",
-      category: "Water",
-      color: "blue"
-    },
-    {
-      id: 5,
-      type: "phone",
-      company: "Internet Provider",
-      icon: Zap,
-      amount: 79.99,
-      dueDate: "2025-08-18",
-      status: "upcoming",
-      category: "Internet",
-      color: "green"
-    }
-  ]);
+    enabled: !!user?.uid
+  });
+
+  // Helper function to get icon for bill
+  const getBillIcon = (billName: string) => {
+    const name = billName.toLowerCase();
+    if (name.includes('hydro') || name.includes('electric') || name.includes('power')) return Zap;
+    if (name.includes('phone') || name.includes('mobile') || name.includes('rogers') || name.includes('bell') || name.includes('telus')) return Phone;
+    if (name.includes('credit') || name.includes('visa') || name.includes('mastercard') || name.includes('bank')) return CreditCard;
+    return Home; // Default icon
+  };
+
+  // Helper function to get bill status
+  const getBillStatus = (dueDate: Date, paid: boolean) => {
+    if (paid) return 'paid';
+    
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffInDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays < 0) return 'overdue';
+    if (diffInDays <= 3) return 'due_soon';
+    return 'upcoming';
+  };
+
+  // Convert Firebase bills to display format
+  const bills = firebaseBills.map(bill => ({
+    id: bill.id,
+    company: bill.name,
+    icon: getBillIcon(bill.name),
+    amount: bill.amount,
+    dueDate: bill.dueDate.toISOString().split('T')[0],
+    status: getBillStatus(bill.dueDate, bill.paid),
+    category: bill.category || 'General',
+    color: bill.paid ? 'green' : getBillStatus(bill.dueDate, bill.paid) === 'due_soon' ? 'red' : 'blue',
+    accountNumber: bill.accountNumber,
+    frequency: bill.frequency,
+    leadDays: bill.leadDays,
+    paid: bill.paid
+  }));
 
   useEffect(() => {
     let mounted = true;
@@ -121,14 +112,48 @@ export default function StableDashboard() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getTotalByCategory = (type: string) => {
+  const getTotalByCategory = (category: string) => {
     return bills
-      .filter(bill => bill.type === type)
+      .filter(bill => {
+        const name = bill.company.toLowerCase();
+        switch (category) {
+          case 'utility':
+            return name.includes('hydro') || name.includes('electric') || name.includes('power') || 
+                   name.includes('water') || name.includes('gas') || name.includes('enbridge');
+          case 'phone':
+            return name.includes('phone') || name.includes('mobile') || name.includes('rogers') || 
+                   name.includes('bell') || name.includes('telus') || name.includes('internet') ||
+                   name.includes('wifi');
+          case 'credit_card':
+            return name.includes('credit') || name.includes('visa') || name.includes('mastercard') || 
+                   name.includes('bank') || name.includes('td') || name.includes('rbc') || 
+                   name.includes('scotiabank') || name.includes('cibc');
+          default:
+            return false;
+        }
+      })
       .reduce((sum, bill) => sum + bill.amount, 0);
   };
 
-  const getCountByCategory = (type: string) => {
-    return bills.filter(bill => bill.type === type).length;
+  const getCountByCategory = (category: string) => {
+    return bills.filter(bill => {
+      const name = bill.company.toLowerCase();
+      switch (category) {
+        case 'utility':
+          return name.includes('hydro') || name.includes('electric') || name.includes('power') || 
+                 name.includes('water') || name.includes('gas') || name.includes('enbridge');
+        case 'phone':
+          return name.includes('phone') || name.includes('mobile') || name.includes('rogers') || 
+                 name.includes('bell') || name.includes('telus') || name.includes('internet') ||
+                 name.includes('wifi');
+        case 'credit_card':
+          return name.includes('credit') || name.includes('visa') || name.includes('mastercard') || 
+                 name.includes('bank') || name.includes('td') || name.includes('rbc') || 
+                 name.includes('scotiabank') || name.includes('cibc');
+        default:
+          return false;
+      }
+    }).length;
   };
 
   if (loading) {
@@ -337,37 +362,91 @@ export default function StableDashboard() {
               </div>
             </div>
             
-            <div className="space-y-3">
-              {bills.slice(0, 3).map((bill) => (
-                <button
-                  key={bill.id}
-                  onClick={() => window.location.href = `/bill-details/${bill.id}`}
-                  className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow text-left"
+            {billsLoading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your bills...</p>
+              </div>
+            )}
+
+            {billsError && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Loading Bills</h3>
+                <p className="text-gray-600 mb-4">There was an issue loading your bills. Please try again.</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  data-testid="button-retry-bills"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 bg-${bill.color}-100 rounded-xl flex items-center justify-center`}>
-                        <bill.icon className={`w-6 h-6 text-${bill.color}-600`} />
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!billsLoading && !billsError && bills.length === 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">No bills yet</h3>
+                <p className="text-gray-600 mb-4">Add your first bill to get started with MyBillPort</p>
+                <button 
+                  onClick={() => window.location.href = "/add-bill"}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  data-testid="button-add-first-bill-home"
+                >
+                  Add Your First Bill
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {!billsLoading && !billsError && bills.slice(0, 3).map((bill) => {
+                const IconComponent = bill.icon;
+                return (
+                  <button
+                    key={bill.id}
+                    onClick={() => window.location.href = `/bill-details/${bill.id}`}
+                    className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow text-left"
+                    data-testid={`bill-preview-${bill.id}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          bill.paid ? 'bg-green-100' : 
+                          bill.status === 'due_soon' ? 'bg-red-100' : 'bg-blue-100'
+                        }`}>
+                          <IconComponent className={`w-6 h-6 ${
+                            bill.paid ? 'text-green-600' : 
+                            bill.status === 'due_soon' ? 'text-red-600' : 'text-blue-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800">{bill.company}</h4>
+                          <p className="text-sm text-gray-500">
+                            {bill.accountNumber && `#${bill.accountNumber} • `}
+                            {bill.frequency}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">Due {formatDate(bill.dueDate)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800">{bill.company}</h4>
-                        <p className="text-sm text-gray-500">{bill.category}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Calendar className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">Due {formatDate(bill.dueDate)}</span>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-800">${bill.amount.toFixed(2)}</p>
+                        <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(bill.status)}`}>
+                          {getStatusIcon(bill.status)}
+                          <span className="capitalize">{bill.status.replace('_', ' ')}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-800">${bill.amount.toFixed(2)}</p>
-                      <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(bill.status)}`}>
-                        {getStatusIcon(bill.status)}
-                        <span className="capitalize">{bill.status.replace('_', ' ')}</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

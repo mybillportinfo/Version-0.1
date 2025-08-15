@@ -321,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simplified payment request endpoint  
+  // Payment request endpoint using MailerSend
   app.post("/api/payment-request/send", async (req, res) => {
     try {
       const { recipientEmail, amount, message } = req.body;
@@ -369,23 +369,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
       `;
 
-      // Create transporter and send email
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: 'mybillportinfo@gmail.com',
-          pass: 'mybillport2024!'
-        }
+      // Remove the old email template logic since we're using the service now
+      // Import email service
+      const { sendPaymentRequestEmail } = await import('../services/email');
+
+      // Send email using MailerSend
+      const result = await sendPaymentRequestEmail({
+        to: recipientEmail,
+        name: recipientEmail.split('@')[0], // Use email prefix as name
+        amount: parseFloat(amount),
+        note: message
       });
 
-      const mailOptions = {
-        from: 'MyBillPort <mybillportinfo@gmail.com>',
-        to: recipientEmail,
-        subject: `💰 Payment Request: $${amount.toFixed(2)} CAD`,
-        html: emailContent
-      };
-
-      await transporter.sendMail(mailOptions);
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: "Failed to send payment request email",
+          details: result.error
+        });
+      }
 
       res.json({ 
         success: true, 
@@ -486,6 +487,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: "Failed to send profile update notifications",
         details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Email test endpoint
+  app.post("/email-test", async (req, res) => {
+    try {
+      if (!process.env.TEST_EMAIL) {
+        return res.status(400).json({ 
+          error: "TEST_EMAIL environment variable not set" 
+        });
+      }
+
+      // Import email service
+      const { sendPaymentRequestEmail } = await import('../services/email');
+
+      // Send test email
+      const result = await sendPaymentRequestEmail({
+        to: process.env.TEST_EMAIL,
+        name: "Test User",
+        amount: 25.00,
+        note: "This is a test email from MyBillPort email service"
+      });
+
+      if (result.success) {
+        res.json({ 
+          success: true,
+          message: `Test email sent successfully to ${process.env.TEST_EMAIL}`,
+          statusCode: 200
+        });
+      } else {
+        res.status(500).json({ 
+          error: "Email test failed",
+          details: result.error,
+          statusCode: 500
+        });
+      }
+
+    } catch (error) {
+      console.error('Email test error:', error);
+      res.status(500).json({ 
+        error: "Email test failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+        statusCode: 500
       });
     }
   });

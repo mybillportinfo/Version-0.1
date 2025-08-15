@@ -1,41 +1,59 @@
 // @ts-ignore
 import { db } from "../lib/firebaseConfig";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, serverTimestamp, query, where } from "firebase/firestore";
 
 export interface BillData {
-  companyName: string;
+  name: string; // Bill name (company)
+  accountNumber: string;
   amount: number;
   dueDate: Date;
-  category: string;
-  status?: string;
+  frequency: 'monthly' | 'biweekly' | 'weekly';
+  leadDays: 1 | 3 | 7;
+  paid: boolean;
+  createdAt?: any; // Firestore serverTimestamp
+  userId: string;
+  category?: string;
   priority?: string;
   icon?: string;
-  isPaid?: boolean;
 }
 
-export interface FirestoreBill extends BillData {
+export interface FirestoreBill extends Omit<BillData, 'createdAt'> {
   id: string;
+  createdAt: any;
 }
 
 // Add a new bill to Firestore
-export async function addBill(billData: Omit<BillData, 'id'>): Promise<string> {
+export async function addBill(billData: Omit<BillData, 'createdAt'>): Promise<string> {
   const docRef = await addDoc(collection(db, "bills"), {
     ...billData,
-    dueDate: billData.dueDate.toISOString() // Convert Date to string for Firestore
+    dueDate: billData.dueDate.toISOString(),
+    createdAt: serverTimestamp()
   });
   return docRef.id;
 }
 
 // Get all bills from Firestore
-export async function getBills(): Promise<FirestoreBill[]> {
-  const querySnapshot = await getDocs(collection(db, "bills"));
+export async function getBills(userId?: string): Promise<FirestoreBill[]> {
+  let billsQuery;
+  
+  if (userId) {
+    // Query bills for specific user
+    billsQuery = query(collection(db, "bills"), where("userId", "==", userId));
+  } else {
+    // Get all bills (for admin or testing)
+    billsQuery = collection(db, "bills");
+  }
+  
+  const querySnapshot = await getDocs(billsQuery);
   return querySnapshot.docs.map(doc => {
     const data = doc.data();
     return { 
       id: doc.id, 
       ...data,
-      dueDate: data.dueDate ? new Date(data.dueDate) : new Date(), // Convert string back to Date
-      isPaid: data.isPaid || false
+      dueDate: data.dueDate ? new Date(data.dueDate) : new Date(),
+      paid: data.paid || false,
+      leadDays: data.leadDays || 3,
+      frequency: data.frequency || 'monthly'
     } as FirestoreBill;
   });
 }
