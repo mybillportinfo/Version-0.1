@@ -55,7 +55,7 @@ export class DatabaseStorage implements IStorage {
   async createBill(insertBill: InsertBill): Promise<Bill> {
     const [bill] = await db
       .insert(bills)
-      .values([insertBill])
+      .values(insertBill)
       .returning();
     return bill;
   }
@@ -76,7 +76,7 @@ export class DatabaseStorage implements IStorage {
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {
     const [payment] = await db
       .insert(payments)
-      .values([insertPayment])
+      .values(insertPayment)
       .returning();
     return payment;
   }

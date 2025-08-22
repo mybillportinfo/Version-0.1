@@ -625,18 +625,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paymentIntent = event.data.object;
         console.log('Payment successful:', paymentIntent.id);
         
-        // Update bill status to paid
-        if (paymentIntent.metadata?.billId) {
-          try {
-            const updatedBill = await storage.updateBillStatus(paymentIntent.metadata.billId, 'paid');
-            if (updatedBill) {
-              console.log(`✅ Bill ${paymentIntent.metadata.billId} marked as paid`);
-            } else {
-              console.log(`⚠️ Bill ${paymentIntent.metadata.billId} not found`);
-            }
-          } catch (error) {
-            console.error('Failed to update bill status:', error);
+        try {
+          const intentBillId = paymentIntent.metadata?.billId;
+          // Log the payment record
+          if (intentBillId) {
+            const paymentRecord = {
+              billId: intentBillId,
+              userId: "demo-user-1", // You can get this from bill lookup
+              amount: (paymentIntent.amount / 100).toString(), // Convert from cents
+              status: "completed" as const
+            };
+            
+            await storage.createPayment(paymentRecord);
+            console.log(`💰 Payment record created for intent ${paymentIntent.id}`);
           }
+
+          // Mark the bill as paid
+          if (intentBillId) {
+            const updatedBill = await storage.updateBillStatus(intentBillId, 'paid');
+            if (updatedBill) {
+              console.log(`✅ Bill ${intentBillId} marked as paid (payment intent ${paymentIntent.id})`);
+            } else {
+              console.log(`⚠️ Bill ${intentBillId} not found`);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to process payment intent:', error);
         }
         break;
       
@@ -644,18 +658,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const session = event.data.object;
         console.log('Checkout session completed:', session.id);
         
-        // Update bill status to paid for checkout sessions
-        if (session.metadata?.billId) {
-          try {
-            const updatedBill = await storage.updateBillStatus(session.metadata.billId, 'paid');
-            if (updatedBill) {
-              console.log(`✅ Bill ${session.metadata.billId} marked as paid (checkout)`);
-            } else {
-              console.log(`⚠️ Bill ${session.metadata.billId} not found`);
-            }
-          } catch (error) {
-            console.error('Failed to update bill status:', error);
+        try {
+          const sessionBillId = session.metadata?.billId;
+          // Log the payment record
+          if (sessionBillId && session.amount_total) {
+            const paymentRecord = {
+              billId: sessionBillId,
+              userId: "demo-user-1", // You can get this from session or bill lookup
+              amount: (session.amount_total / 100).toString(), // Convert from cents
+              status: "completed" as const
+            };
+            
+            await storage.createPayment(paymentRecord);
+            console.log(`💰 Payment record created for session ${session.id}`);
           }
+
+          // Mark the bill as paid
+          if (sessionBillId) {
+            const updatedBill = await storage.updateBillStatus(sessionBillId, 'paid');
+            if (updatedBill) {
+              console.log(`✅ Bill ${sessionBillId} marked as paid (checkout session ${session.id})`);
+            } else {
+              console.log(`⚠️ Bill ${sessionBillId} not found`);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to process checkout session:', error);
         }
         break;
       
