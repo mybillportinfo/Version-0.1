@@ -604,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========== STRIPE PAYMENT PROCESSING ENDPOINTS ==========
   
   // Stripe webhook endpoint - MUST be before JSON body parsing
-  app.post('/stripe/webhook', express.raw({type: 'application/json'}), (req, res) => {
+  app.post('/stripe/webhook', express.raw({type: 'application/json'}), async (req, res) => {
     if (!stripe || !endpointSecret) {
       return res.status(400).send('Stripe not configured');
     }
@@ -625,15 +625,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paymentIntent = event.data.object;
         console.log('Payment successful:', paymentIntent.id);
         
-        // Here you can update your database to mark bill as paid
+        // Update bill status to paid
         if (paymentIntent.metadata?.billId) {
-          console.log(`Marking bill ${paymentIntent.metadata.billId} as paid`);
+          try {
+            const updatedBill = await storage.updateBillStatus(paymentIntent.metadata.billId, 'paid');
+            if (updatedBill) {
+              console.log(`✅ Bill ${paymentIntent.metadata.billId} marked as paid`);
+            } else {
+              console.log(`⚠️ Bill ${paymentIntent.metadata.billId} not found`);
+            }
+          } catch (error) {
+            console.error('Failed to update bill status:', error);
+          }
+        }
+        break;
+      
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        console.log('Checkout session completed:', session.id);
+        
+        // Update bill status to paid for checkout sessions
+        if (session.metadata?.billId) {
+          try {
+            const updatedBill = await storage.updateBillStatus(session.metadata.billId, 'paid');
+            if (updatedBill) {
+              console.log(`✅ Bill ${session.metadata.billId} marked as paid (checkout)`);
+            } else {
+              console.log(`⚠️ Bill ${session.metadata.billId} not found`);
+            }
+          } catch (error) {
+            console.error('Failed to update bill status:', error);
+          }
         }
         break;
       
       case 'payment_intent.payment_failed':
         const failedPayment = event.data.object;
-        console.log('Payment failed:', failedPayment.id);
+        console.log('❌ Payment failed:', failedPayment.id);
         break;
       
       default:
@@ -644,6 +672,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create payment intent for bill payment
+  // Stripe Checkout Session - Alternative payment method
+  app.post("/api/checkout", async (req, res) => {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    try {
+      const { billId, billName, amount, email } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: 'Valid amount is required' });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        customer_email: email || undefined,
+        line_items: [{
+          price_data: {
+            currency: "cad", // Canadian dollars for MyBillPort
+            product_data: { name: billName || "Bill Payment" },
+            unit_amount: Math.round(Number(amount) * 100), // Convert to cents
+          },
+          quantity: 1,
+        }],
+        success_url: `${req.headers.origin || 'https://mybillport.com'}/dashboard?payment=success`,
+        cancel_url: `${req.headers.origin || 'https://mybillport.com'}/dashboard?payment=cancelled`,
+        metadata: { billId: billId || '' } // Important for webhook handling
+      });
+
+      res.json({ 
+        id: session.id, 
+        url: session.url 
+      });
+    } catch (error: any) {
+      console.error('Error creating checkout session:', error);
+      res.status(500).json({ 
+        error: 'Failed to create checkout session',
+        message: error.message 
+      });
+    }
+  });
+
+  // Payment Intent approach (existing)
   app.post('/api/create-payment-intent', async (req, res) => {
     if (!stripe) {
       return res.status(500).json({ error: 'Stripe not configured' });

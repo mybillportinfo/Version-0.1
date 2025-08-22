@@ -55,7 +55,7 @@ export class DatabaseStorage implements IStorage {
   async createBill(insertBill: InsertBill): Promise<Bill> {
     const [bill] = await db
       .insert(bills)
-      .values(insertBill)
+      .values([insertBill])
       .returning();
     return bill;
   }
@@ -76,7 +76,7 @@ export class DatabaseStorage implements IStorage {
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {
     const [payment] = await db
       .insert(payments)
-      .values(insertPayment)
+      .values([insertPayment])
       .returning();
     return payment;
   }
@@ -100,6 +100,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rewards.id, id))
       .returning();
     return reward || undefined;
+  }
+
+  async updateBillStatus(billId: string, status: 'paid' | 'pending' | 'overdue'): Promise<Bill | undefined> {
+    const [bill] = await db
+      .update(bills)
+      .set({ isPaid: status === 'paid' ? 1 : 0 })
+      .where(eq(bills.id, billId))
+      .returning();
+    return bill || undefined;
   }
 }
 
