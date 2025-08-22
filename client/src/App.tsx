@@ -14,6 +14,7 @@ import Profile from "./pages/profile";
 import FirebaseTest from "./pages/firebase-test";
 import Signup from "./pages/signup";
 import Login from "./pages/login";
+import ModernLogin from "./pages/modern-login";
 import AuthDashboard from "./pages/auth-dashboard";
 import EnhancedDashboard from "./pages/enhanced-dashboard";
 import ForgotPassword from "./pages/forgot-password";
@@ -45,7 +46,7 @@ function Router() {
       <Route path="/" component={NoAuthDashboard} />
       <Route path="/test" component={TestDashboard} />
       <Route path="/signup" component={Signup} />
-      <Route path="/login" component={Login} />
+      <Route path="/login" component={ModernLogin} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/dashboard" component={AuthDashboard} />
       <Route path="/enhanced-dashboard" component={EnhancedDashboard} />
