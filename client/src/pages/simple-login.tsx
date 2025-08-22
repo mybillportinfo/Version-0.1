@@ -1,22 +1,17 @@
 import { useState } from "react";
 import { Link } from "wouter";
-// @ts-ignore  
-import { signInUser as loginUser } from "../services/auth.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Mail, Lock, Loader2 } from "lucide-react";
 
-export default function ModernLogin() {
+export default function SimpleLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,39 +21,39 @@ export default function ModernLogin() {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await loginUser(email, password);
-      
-      toast({
-        title: "Welcome back!",
-        description: "You've been successfully logged in.",
-      });
-      
-      // Small delay to show the success message
-      setTimeout(() => {
+    setLoading(true);
+    setError(null);
+
+    // Simulate login process
+    setTimeout(() => {
+      if (email === "demo@mybillport.com" && password === "demo123") {
+        // Successful demo login
+        localStorage.setItem("user", JSON.stringify({ 
+          email: email,
+          name: "Demo User",
+          isAuthenticated: true
+        }));
         window.location.href = "/";
-      }, 1000);
-      
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Failed to sign in. Please check your credentials.");
-      
-      toast({
-        title: "Login Failed",
-        description: err.message || "Please check your email and password.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+      } else {
+        setError("Invalid email or password. Use demo@mybillport.com / demo123");
+        setLoading(false);
+      }
+    }, 1000);
   };
 
   const handleDemoLogin = () => {
     setEmail("demo@mybillport.com");
     setPassword("demo123");
+  };
+
+  const handleSkipLogin = () => {
+    // Set guest user
+    localStorage.setItem("user", JSON.stringify({ 
+      email: "guest@mybillport.com",
+      name: "Guest User",
+      isGuest: true
+    }));
+    window.location.href = "/";
   };
 
   return (
@@ -112,41 +107,15 @@ export default function ModernLogin() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type="password"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11"
+                    className="pl-10 h-11"
                     data-testid="input-password"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <Label htmlFor="remember" className="text-sm text-gray-600">
-                    Remember me
-                  </Label>
-                </div>
-                <Link href="/forgot-password">
-                  <a className="text-blue-600 hover:text-blue-800 hover:underline">
-                    Forgot password?
-                  </a>
-                </Link>
               </div>
 
               <Button
@@ -161,65 +130,53 @@ export default function ModernLogin() {
                     Signing in...
                   </>
                 ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
+                  "Sign In"
                 )}
               </Button>
             </form>
 
             {/* Demo Account Section */}
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-900">Try Demo Account</p>
-                  <p className="text-xs text-blue-700">Experience all features instantly</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDemoLogin}
-                  className="text-blue-600 border-blue-300 hover:bg-blue-100"
-                  data-testid="button-demo-login"
-                >
-                  Use Demo
-                </Button>
+              <div className="text-center mb-3">
+                <p className="text-sm font-medium text-blue-900">Demo Account</p>
+                <p className="text-xs text-blue-700">Email: demo@mybillport.com | Password: demo123</p>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDemoLogin}
+                className="w-full text-blue-600 border-blue-300 hover:bg-blue-100"
+                data-testid="button-demo-login"
+              >
+                Fill Demo Credentials
+              </Button>
             </div>
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Don't have an account?</span>
-              </div>
-            </div>
+            {/* Skip Login */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleSkipLogin}
+              className="w-full text-gray-600 hover:text-gray-800"
+              data-testid="button-skip-login"
+            >
+              Continue as Guest
+            </Button>
 
             {/* Sign Up Link */}
-            <Link href="/signup">
-              <Button
-                variant="outline"
-                className="w-full h-11 border-gray-300 hover:bg-gray-50"
-                data-testid="link-signup"
-              >
-                Create New Account
-              </Button>
-            </Link>
+            <div className="text-center pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Link href="/signup">
+                  <a className="text-blue-600 hover:text-blue-800 font-medium underline" data-testid="link-signup">
+                    Sign up here
+                  </a>
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Skip Login Option */}
-        <div className="text-center mt-6">
-          <Link href="/">
-            <a className="text-sm text-gray-500 hover:text-gray-700 underline" data-testid="link-skip-login">
-              Skip login and explore as guest
-            </a>
-          </Link>
-        </div>
 
         {/* Footer */}
         <div className="text-center mt-8">
