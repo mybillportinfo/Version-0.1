@@ -53,9 +53,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBill(insertBill: InsertBill): Promise<Bill> {
+    // Ensure priority is properly typed
+    const validatedBill = {
+      ...insertBill,
+      priority: insertBill.priority as "urgent" | "medium" | "low"
+    };
     const [bill] = await db
       .insert(bills)
-      .values(insertBill)
+      .values(validatedBill)
       .returning();
     return bill;
   }
@@ -74,9 +79,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    // Ensure status is properly typed
+    const validatedPayment = {
+      ...insertPayment,
+      status: insertPayment.status as "pending" | "completed" | "failed"
+    };
     const [payment] = await db
       .insert(payments)
-      .values(insertPayment)
+      .values(validatedPayment)
       .returning();
     return payment;
   }
