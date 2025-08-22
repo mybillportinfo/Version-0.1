@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "./pages/dashboard";
 import FastDashboard from "./pages/fast-dashboard";
+import SimpleFastDashboard from "./pages/simple-fast-dashboard";
 import Payments from "./pages/payments";
 import Rewards from "./pages/rewards";
 import Profile from "./pages/profile";
@@ -40,7 +41,7 @@ import CheckoutPage from "./pages/checkout";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={FastDashboard} />
+      <Route path="/" component={SimpleFastDashboard} />
       <Route path="/test" component={TestDashboard} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
