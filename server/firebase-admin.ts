@@ -11,10 +11,10 @@ export function initializeFirebaseAdmin() {
 
   try {
     // Check if admin app already exists
-    const existingApps = admin.getApps();
-    if (existingApps.length > 0) {
-      adminApp = existingApps[0];
-    } else {
+    try {
+      adminApp = admin.app();
+    } catch (e) {
+      // No existing app, create new one
       // Initialize with service account
       const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
       

@@ -354,8 +354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           client_user_id: DEMO_USER_ID.toString(),
         },
         client_name: "MyBillPort",
-        products: PLAID_PRODUCTS as any,
-        country_codes: PLAID_COUNTRY_CODES as any,
+        products: ['transactions' as const],
+        country_codes: ['CA' as const],
         language: 'en',
       };
 
