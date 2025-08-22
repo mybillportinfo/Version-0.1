@@ -33,6 +33,8 @@ import PlaidIntegration from "./pages/plaid-integration";
 import BillSplitting from "./pages/bill-splitting";
 import RequestMoney from "./pages/request-money";
 import PaymentPage from "./pages/payments";
+import BillsDashboard from "./pages/bills-dashboard";
+import CheckoutPage from "./pages/checkout";
 
 function Router() {
   return (
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/plaid" component={PlaidIntegration} />
       <Route path="/bill-splitting" component={BillSplitting} />
       <Route path="/request-money" component={RequestMoney} />
+      <Route path="/bills-dashboard" component={BillsDashboard} />
+      <Route path="/checkout" component={CheckoutPage} />
       <Route component={NotFound} />
     </Switch>
   );
