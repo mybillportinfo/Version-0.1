@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, initializeStorage } from "./storage";
 import { getFirebaseAdmin, initializeFirebaseAdmin } from "./firebase-admin";
 import { seedDatabase } from "./seed";
 import { insertBillSchema, insertPaymentSchema, insertRewardSchema } from "@shared/schema";
@@ -36,6 +36,8 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize storage (auto-detects database vs memory fallback)
+  await initializeStorage();
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({
@@ -395,8 +397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           client_user_id: DEMO_USER_ID.toString(),
         },
         client_name: "MyBillPort",
-        products: [Products.Transactions],
-        country_codes: [CountryCode.Ca],
+        products: ['transactions' as any],
+        country_codes: ['CA' as any],
         language: 'en',
       };
 
