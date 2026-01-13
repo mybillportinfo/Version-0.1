@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import BottomNavigation from "@/components/bottom-navigation";
 import BillCard from "@/components/BillCard";
 import { Plus, Camera, AlertCircle, Loader2, Zap, Phone, Wifi, CreditCard, Droplets, Home } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Bill {
   id: string;
@@ -68,6 +69,31 @@ export default function NoAuthDashboard() {
     loadBills();
     return () => { mounted = false; };
   }, []);
+
+  const handleDeleteBill = async (billId: string) => {
+    try {
+      const response = await fetch(`/api/bills/${billId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete bill");
+      }
+      
+      setBills(prev => prev.filter(bill => bill.id !== billId));
+      toast({
+        title: "Bill Deleted",
+        description: "The bill has been removed from your list."
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to delete bill. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const totalBalance = bills.reduce((sum, bill) => sum + Number(bill.amount), 0);
 
@@ -163,6 +189,7 @@ export default function NoAuthDashboard() {
                     new Date(bill.dueDate) < new Date() ? 'overdue' :
                     new Date(bill.dueDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'due_soon' : 'upcoming'
                   }
+                  onDelete={handleDeleteBill}
                 />
               ))
             )}

@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Zap, Phone, Wifi, CreditCard, Home, Droplets, Tv, Shield, Car } from "lucide-react";
+import { Zap, Phone, Wifi, CreditCard, Home, Droplets, Tv, Shield, Car, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 interface BillCardProps {
   id: string;
@@ -10,6 +11,7 @@ interface BillCardProps {
   status?: 'paid' | 'due_soon' | 'overdue' | 'upcoming';
   accountNumber?: string;
   logoUrl?: string;
+  onDelete?: (id: string) => void;
 }
 
 const categoryIcons: Record<string, any> = {
@@ -78,8 +80,10 @@ export default function BillCard({
   dueDate, 
   status,
   accountNumber,
-  logoUrl 
+  logoUrl,
+  onDelete
 }: BillCardProps) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const Icon = getIconForBill(company, category);
   const colors = getColorsForBill(company, category);
   
@@ -90,31 +94,86 @@ export default function BillCard({
     upcoming: 'text-gray-600'
   };
 
-  return (
-    <Link href={`/bill-details/${id}`}>
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`w-12 h-12 ${colors.bg} rounded-xl flex items-center justify-center`}>
-              {logoUrl ? (
-                <img src={logoUrl} alt={company} className="w-8 h-8 object-contain" />
-              ) : (
-                <Icon className={`w-6 h-6 ${colors.text}`} />
-              )}
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">{company}</h4>
-              <p className="text-sm text-gray-500">{category || 'Bill'}</p>
-            </div>
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowConfirm(true);
+  };
+
+  const handleConfirmDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(id);
+    }
+    setShowConfirm(false);
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowConfirm(false);
+  };
+
+  if (showConfirm) {
+    return (
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-red-200">
+        <div className="text-center">
+          <p className="text-gray-900 font-medium mb-2">Delete {company}?</p>
+          <p className="text-sm text-gray-500 mb-4">This action cannot be undone.</p>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleCancelDelete}
+              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
+            >
+              Delete
+            </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+      <div className="flex items-center justify-between">
+        <Link href={`/bill-details/${id}`} className="flex items-center space-x-3 flex-1">
+          <div className={`w-12 h-12 ${colors.bg} rounded-xl flex items-center justify-center`}>
+            {logoUrl ? (
+              <img src={logoUrl} alt={company} className="w-8 h-8 object-contain" />
+            ) : (
+              <Icon className={`w-6 h-6 ${colors.text}`} />
+            )}
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-900">{company}</h4>
+            <p className="text-sm text-gray-500">{category || 'Bill'}</p>
+          </div>
+        </Link>
+        <div className="flex items-center space-x-3">
           <div className="text-right">
             <p className="text-sm text-gray-500">{formatDate(dueDate)}</p>
             <p className={`text-lg font-bold ${status ? statusColors[status] : 'text-gray-900'}`}>
               ${amount.toFixed(2)}
             </p>
           </div>
+          {onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+              title="Delete bill"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
