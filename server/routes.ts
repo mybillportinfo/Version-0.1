@@ -7,6 +7,7 @@ import { insertBillSchema, insertPaymentSchema, insertRewardSchema } from "@shar
 import { z } from "zod";
 import { plaidClient } from "./plaid";
 import { scanBillImage } from './ai-scanner';
+import { scanEmailsForBills, getCategoryIcon } from './gmail';
 import { sendPaymentRequestEmail } from '../services/email';
 import nodemailer from 'nodemailer';
 import Stripe from "stripe";
@@ -1220,6 +1221,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to sync transactions'
+      });
+    }
+  });
+
+  // Gmail email bills scanning endpoint
+  app.get("/api/email-bills", async (req, res) => {
+    try {
+      const emailBills = await scanEmailsForBills(50);
+      
+      res.json({
+        success: true,
+        bills: emailBills,
+        count: emailBills.length,
+        message: "Email scan completed"
+      });
+    } catch (error: any) {
+      console.error('Email bills scan failed:', error);
+      
+      const errorMessage = error.message?.toLowerCase() || '';
+      
+      if (errorMessage.includes('gmail not connected') || 
+          errorMessage.includes('x_replit_token') ||
+          errorMessage.includes('insufficient permission')) {
+        return res.status(400).json({
+          success: false,
+          error: "Gmail not connected or insufficient permissions. Please reconnect your Gmail account.",
+          needsConnection: true
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to scan emails'
       });
     }
   });

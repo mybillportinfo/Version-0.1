@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import BottomNavigation from "@/components/bottom-navigation";
 import BillCard from "@/components/BillCard";
-import { Plus, Camera, AlertCircle, Loader2, Zap, Phone, Wifi, CreditCard, Droplets, Home, Building2, Search } from "lucide-react";
+import { Plus, Camera, AlertCircle, Loader2, Zap, Phone, Wifi, CreditCard, Droplets, Home, Building2, Search, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Bill {
@@ -205,29 +205,35 @@ export default function NoAuthDashboard() {
           )}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-4 gap-2 mt-6">
+          <div className="grid grid-cols-5 gap-1.5 mt-6">
             <Link href="/add-bill">
-              <button className="flex flex-col items-center justify-center space-y-1 bg-teal-50 text-teal-700 py-3 px-2 rounded-xl font-medium hover:bg-teal-100 transition-colors w-full">
+              <button className="flex flex-col items-center justify-center space-y-1 bg-teal-50 text-teal-700 py-3 px-1 rounded-xl font-medium hover:bg-teal-100 transition-colors w-full">
                 <Plus className="w-5 h-5" />
-                <span className="text-[10px]">Add Bill</span>
+                <span className="text-[9px]">Add Bill</span>
               </button>
             </Link>
             <Link href="/camera-scan">
-              <button className="flex flex-col items-center justify-center space-y-1 bg-emerald-50 text-emerald-700 py-3 px-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors w-full">
+              <button className="flex flex-col items-center justify-center space-y-1 bg-emerald-50 text-emerald-700 py-3 px-1 rounded-xl font-medium hover:bg-emerald-100 transition-colors w-full">
                 <Camera className="w-5 h-5" />
-                <span className="text-[10px]">Scan Bill</span>
+                <span className="text-[9px]">Scan</span>
               </button>
             </Link>
             <Link href="/plaid">
-              <button className="flex flex-col items-center justify-center space-y-1 bg-blue-50 text-blue-700 py-3 px-2 rounded-xl font-medium hover:bg-blue-100 transition-colors w-full">
+              <button className="flex flex-col items-center justify-center space-y-1 bg-blue-50 text-blue-700 py-3 px-1 rounded-xl font-medium hover:bg-blue-100 transition-colors w-full">
                 <Building2 className="w-5 h-5" />
-                <span className="text-[10px]">Link Bank</span>
+                <span className="text-[9px]">Bank</span>
               </button>
             </Link>
             <Link href="/auto-detect">
-              <button className="flex flex-col items-center justify-center space-y-1 bg-purple-50 text-purple-700 py-3 px-2 rounded-xl font-medium hover:bg-purple-100 transition-colors w-full">
+              <button className="flex flex-col items-center justify-center space-y-1 bg-purple-50 text-purple-700 py-3 px-1 rounded-xl font-medium hover:bg-purple-100 transition-colors w-full">
                 <Search className="w-5 h-5" />
-                <span className="text-[10px]">Auto Find</span>
+                <span className="text-[9px]">Auto</span>
+              </button>
+            </Link>
+            <Link href="/email-bills">
+              <button className="flex flex-col items-center justify-center space-y-1 bg-orange-50 text-orange-700 py-3 px-1 rounded-xl font-medium hover:bg-orange-100 transition-colors w-full">
+                <Mail className="w-5 h-5" />
+                <span className="text-[9px]">Email</span>
               </button>
             </Link>
           </div>
