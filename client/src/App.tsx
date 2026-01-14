@@ -36,6 +36,7 @@ import LiveChat from "./pages/live-chat";
 import AIReminders from "./pages/ai-reminders";
 import CreditReminders from "./pages/credit-reminders";
 import PlaidIntegration from "./pages/plaid-integration";
+import AutoDetectBills from "./pages/auto-detect-bills";
 import BillSplitting from "./pages/bill-splitting";
 import RequestMoney from "./pages/request-money";
 import PaymentPage from "./pages/payments";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/ai-reminders" component={AIReminders} />
       <Route path="/credit-reminders" component={CreditReminders} />
       <Route path="/plaid" component={PlaidIntegration} />
+      <Route path="/auto-detect" component={AutoDetectBills} />
       <Route path="/bill-splitting" component={BillSplitting} />
       <Route path="/request-money" component={RequestMoney} />
       <Route path="/bills-dashboard" component={BillsDashboard} />

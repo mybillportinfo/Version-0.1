@@ -16,6 +16,7 @@ import {
   LinkTokenCreateRequest,
   ItemPublicTokenExchangeRequest,
   AccountsGetRequest,
+  TransactionsGetRequest,
   CountryCode,
   Products
 } from 'plaid';
@@ -534,6 +535,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Plaid Accounts Error:', error);
       res.status(500).json({ 
         error: "Unable to fetch accounts",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get transactions from connected bank account
+  app.get("/api/transactions", async (req, res) => {
+    try {
+      const accessToken = accessTokens.get(DEMO_USER_ID.toString());
+      
+      if (!accessToken) {
+        return res.status(400).json({ 
+          error: "No bank account connected. Please connect your bank account first." 
+        });
+      }
+
+      // Get transactions from the last 90 days
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const request: TransactionsGetRequest = {
+        access_token: accessToken,
+        start_date: startDate,
+        end_date: endDate,
+        options: {
+          count: 500,
+          offset: 0
+        }
+      };
+
+      const response = await plaidClient.transactionsGet(request);
+      const transactions = response.data.transactions.map(txn => ({
+        transaction_id: txn.transaction_id,
+        account_id: txn.account_id,
+        name: txn.name,
+        merchant_name: txn.merchant_name,
+        amount: txn.amount,
+        date: txn.date,
+        category: txn.category,
+        pending: txn.pending,
+        payment_channel: txn.payment_channel
+      }));
+
+      res.json({ 
+        transactions,
+        total_transactions: response.data.total_transactions,
+        start_date: startDate,
+        end_date: endDate
+      });
+    } catch (error) {
+      console.error('Plaid Transactions Error:', error);
+      res.status(500).json({ 
+        error: "Unable to fetch transactions",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Detect recurring bills from transactions
+  app.get("/api/recurring-bills", async (req, res) => {
+    try {
+      const accessToken = accessTokens.get(DEMO_USER_ID.toString());
+      
+      if (!accessToken) {
+        return res.status(400).json({ 
+          error: "No bank account connected. Please connect your bank account first." 
+        });
+      }
+
+      // Get transactions from the last 90 days
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const request: TransactionsGetRequest = {
+        access_token: accessToken,
+        start_date: startDate,
+        end_date: endDate,
+        options: {
+          count: 500,
+          offset: 0
+        }
+      };
+
+      const response = await plaidClient.transactionsGet(request);
+      const transactions = response.data.transactions;
+
+      // Analyze transactions to find recurring patterns
+      const merchantCounts = new Map<string, { 
+        count: number; 
+        amounts: number[]; 
+        dates: string[];
+        category: string[] | null;
+        name: string;
+      }>();
+
+      transactions.forEach(txn => {
+        // Only look at debit transactions (positive amounts in Plaid = money out)
+        if (txn.amount <= 0) return;
+        
+        const key = txn.merchant_name || txn.name;
+        if (!key) return;
+
+        const existing = merchantCounts.get(key);
+        if (existing) {
+          existing.count++;
+          existing.amounts.push(txn.amount);
+          existing.dates.push(txn.date);
+        } else {
+          merchantCounts.set(key, {
+            count: 1,
+            amounts: [txn.amount],
+            dates: [txn.date],
+            category: txn.category || null,
+            name: key
+          });
+        }
+      });
+
+      // Filter for merchants with 2+ transactions (potentially recurring)
+      const recurringBills: Array<{
+        merchant: string;
+        category: string;
+        averageAmount: number;
+        frequency: string;
+        occurrences: number;
+        lastDate: string;
+        confidence: number;
+      }> = [];
+
+      merchantCounts.forEach((data, merchant) => {
+        if (data.count >= 2) {
+          const avgAmount = data.amounts.reduce((a, b) => a + b, 0) / data.amounts.length;
+          
+          // Determine frequency based on dates
+          const sortedDates = data.dates.sort();
+          let frequency = 'monthly';
+          let confidence = 50;
+
+          if (data.count >= 3) {
+            const daysBetween: number[] = [];
+            for (let i = 1; i < sortedDates.length; i++) {
+              const diff = (new Date(sortedDates[i]).getTime() - new Date(sortedDates[i-1]).getTime()) / (1000 * 60 * 60 * 24);
+              daysBetween.push(diff);
+            }
+            const avgDays = daysBetween.reduce((a, b) => a + b, 0) / daysBetween.length;
+            
+            if (avgDays <= 10) {
+              frequency = 'weekly';
+              confidence = 70;
+            } else if (avgDays <= 20) {
+              frequency = 'bi-weekly';
+              confidence = 75;
+            } else if (avgDays <= 35) {
+              frequency = 'monthly';
+              confidence = 85;
+            } else if (avgDays <= 100) {
+              frequency = 'quarterly';
+              confidence = 60;
+            } else {
+              frequency = 'annual';
+              confidence = 40;
+            }
+
+            // Higher confidence for more occurrences
+            confidence = Math.min(95, confidence + (data.count - 2) * 5);
+          }
+
+          // Categorize the bill type
+          let category = 'Other';
+          if (data.category) {
+            const cats = data.category.map(c => c.toLowerCase());
+            if (cats.some(c => c.includes('utilities'))) category = 'Utilities';
+            else if (cats.some(c => c.includes('subscription') || c.includes('streaming'))) category = 'Subscription';
+            else if (cats.some(c => c.includes('insurance'))) category = 'Insurance';
+            else if (cats.some(c => c.includes('phone') || c.includes('telecom'))) category = 'Phone';
+            else if (cats.some(c => c.includes('internet'))) category = 'Internet';
+            else if (cats.some(c => c.includes('gym') || c.includes('fitness'))) category = 'Fitness';
+            else if (cats.some(c => c.includes('rent') || c.includes('mortgage'))) category = 'Housing';
+            else category = data.category[0] || 'Other';
+          }
+
+          // Use merchant name for better categorization
+          const lowerMerchant = merchant.toLowerCase();
+          if (lowerMerchant.includes('netflix') || lowerMerchant.includes('spotify') || 
+              lowerMerchant.includes('disney') || lowerMerchant.includes('hulu') ||
+              lowerMerchant.includes('amazon prime') || lowerMerchant.includes('apple')) {
+            category = 'Subscription';
+          } else if (lowerMerchant.includes('hydro') || lowerMerchant.includes('electric') ||
+                     lowerMerchant.includes('gas') || lowerMerchant.includes('water')) {
+            category = 'Utilities';
+          } else if (lowerMerchant.includes('rogers') || lowerMerchant.includes('bell') ||
+                     lowerMerchant.includes('telus') || lowerMerchant.includes('fido')) {
+            category = 'Phone';
+          }
+
+          recurringBills.push({
+            merchant,
+            category,
+            averageAmount: Math.round(avgAmount * 100) / 100,
+            frequency,
+            occurrences: data.count,
+            lastDate: sortedDates[sortedDates.length - 1],
+            confidence
+          });
+        }
+      });
+
+      // Sort by confidence and amount
+      recurringBills.sort((a, b) => b.confidence - a.confidence || b.averageAmount - a.averageAmount);
+
+      res.json({
+        recurring_bills: recurringBills,
+        analysis_period: { start_date: startDate, end_date: endDate },
+        total_transactions_analyzed: transactions.length
+      });
+    } catch (error) {
+      console.error('Recurring Bills Detection Error:', error);
+      res.status(500).json({ 
+        error: "Unable to detect recurring bills",
         details: error instanceof Error ? error.message : "Unknown error"
       });
     }
