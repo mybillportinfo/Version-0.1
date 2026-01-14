@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import BottomNavigation from "@/components/bottom-navigation";
 import BillCard from "@/components/BillCard";
-import { Plus, Camera, AlertCircle, Loader2, Zap, Phone, Wifi, CreditCard, Droplets, Home } from "lucide-react";
+import { Plus, Camera, AlertCircle, Loader2, Zap, Phone, Wifi, CreditCard, Droplets, Home, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Bill {
@@ -205,17 +205,23 @@ export default function NoAuthDashboard() {
           )}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
+          <div className="grid grid-cols-3 gap-3 mt-6">
             <Link href="/add-bill">
-              <button className="flex items-center justify-center space-x-2 bg-teal-50 text-teal-700 py-4 px-4 rounded-xl font-medium hover:bg-teal-100 transition-colors w-full">
-                <Plus className="w-5 h-5" />
-                <span>Add Bill</span>
+              <button className="flex flex-col items-center justify-center space-y-2 bg-teal-50 text-teal-700 py-4 px-2 rounded-xl font-medium hover:bg-teal-100 transition-colors w-full">
+                <Plus className="w-6 h-6" />
+                <span className="text-xs">Add Bill</span>
               </button>
             </Link>
             <Link href="/camera-scan">
-              <button className="flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 py-4 px-4 rounded-xl font-medium hover:bg-emerald-100 transition-colors w-full">
-                <Camera className="w-5 h-5" />
-                <span>Scan Bill</span>
+              <button className="flex flex-col items-center justify-center space-y-2 bg-emerald-50 text-emerald-700 py-4 px-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors w-full">
+                <Camera className="w-6 h-6" />
+                <span className="text-xs">Scan Bill</span>
+              </button>
+            </Link>
+            <Link href="/plaid">
+              <button className="flex flex-col items-center justify-center space-y-2 bg-blue-50 text-blue-700 py-4 px-2 rounded-xl font-medium hover:bg-blue-100 transition-colors w-full">
+                <Building2 className="w-6 h-6" />
+                <span className="text-xs">Link Bank</span>
               </button>
             </Link>
           </div>
