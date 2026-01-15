@@ -24,6 +24,15 @@ function getOAuth2Client() {
 }
 
 function getBaseUrl(): string {
+  // Production domain takes priority
+  if (process.env.REPLIT_DEPLOYMENT_URL) {
+    return process.env.REPLIT_DEPLOYMENT_URL;
+  }
+  // Custom domain override
+  if (process.env.APP_URL) {
+    return process.env.APP_URL;
+  }
+  // Development domain
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
