@@ -63,29 +63,22 @@ export default function MVPDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadBills = async () => {
+    try {
+      const response = await fetch("/api/bills");
+      if (!response.ok) throw new Error("Failed to fetch bills");
+      const data = await response.json();
+      setBills(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load bills");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
-
-    const loadBills = async () => {
-      try {
-        const response = await fetch("/api/bills");
-        if (!response.ok) throw new Error("Failed to fetch bills");
-        const data = await response.json();
-        if (mounted) {
-          setBills(data);
-          setError(null);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : "Failed to load bills");
-        }
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-
     loadBills();
-    return () => { mounted = false; };
   }, []);
 
   const handleMarkPaid = async (billId: string) => {
@@ -95,15 +88,20 @@ export default function MVPDashboard() {
         headers: { "Content-Type": "application/json" }
       });
       if (!response.ok) throw new Error("Failed to mark as paid");
-      setBills(prev => prev.map(b => b.id === billId ? { ...b, isPaid: 1 } : b));
+      
+      const refreshResponse = await fetch("/api/bills");
+      if (refreshResponse.ok) {
+        const freshBills = await refreshResponse.json();
+        setBills(freshBills);
+      }
       toast({ title: "Bill marked as paid" });
     } catch {
       toast({ title: "Error", description: "Failed to update bill", variant: "destructive" });
     }
   };
 
-  const unpaidBills = bills.filter(b => b.isPaid === 0);
-  const paidBills = bills.filter(b => b.isPaid === 1);
+  const unpaidBills = bills.filter(b => Number(b.isPaid) === 0);
+  const paidBills = bills.filter(b => Number(b.isPaid) === 1);
   
   const sortedBills = [...unpaidBills].sort((a, b) => {
     const statusOrder = { overdue: 0, "due-soon": 1, upcoming: 2 };
