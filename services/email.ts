@@ -4,8 +4,6 @@ const mailerSend = new MailerSend({
   apiKey: process.env.MAILERSEND_API_KEY || '',
 });
 
-console.log('MailerSend API Key configured:', !!process.env.MAILERSEND_API_KEY);
-
 // Use verified MailerSend trial domain to avoid 401 errors
 const fromEmail = 'mybillport@trial-351ndgwr0p8lzqx8.mlsender.net'; // MailerSend verified domain
 const fromName = process.env.FROM_NAME || 'MyBillPort';
