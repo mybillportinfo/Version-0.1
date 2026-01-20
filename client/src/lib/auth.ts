@@ -3,7 +3,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   OAuthProvider,
   UserCredential,
@@ -86,49 +87,56 @@ export async function resetPassword(email: string): Promise<void> {
   return sendPasswordResetEmail(auth, email);
 }
 
-export async function signInWithGoogle(): Promise<UserCredential> {
+export async function signInWithGoogle(): Promise<void> {
   try {
-    console.log("Attempting Google sign-in");
+    console.log("Attempting Google sign-in with redirect");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
     });
     
-    // Check for new user to send welcome email
-    const result = await signInWithPopup(auth, provider);
-    console.log("Google sign-in successful:", result.user.uid);
-    
-    // Check if this is a new user (first sign-in)
-    const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
-    if (isNewUser && result.user.email) {
-      try {
-        const response = await fetch('/api/auth/welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: result.user.email, 
-            displayName: result.user.displayName || undefined 
-          })
-        });
-        const emailResult = await response.json();
-        if (emailResult.success) {
-          console.log("Welcome email sent to:", result.user.email);
-        }
-      } catch (emailError) {
-        console.warn("Failed to send welcome email:", emailError);
-      }
-    }
-    
-    return result;
+    // Use redirect instead of popup to avoid storage-partitioned browser issues
+    await signInWithRedirect(auth, provider);
+    // Note: This function doesn't return - the page redirects to Google
   } catch (error: any) {
     console.error("Google sign-in error:", error.code, error.message);
-    
-    // Handle storage-partitioned browser errors
-    if (error.message?.includes('missing initial state') || 
-        error.message?.includes('storage-partitioned')) {
-      error.code = 'auth/browser-storage-blocked';
+    throw error;
+  }
+}
+
+// Call this on app startup to handle Google sign-in redirect result
+export async function handleGoogleRedirectResult(): Promise<UserCredential | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      console.log("Google sign-in successful:", result.user.uid);
+      
+      // Check if this is a new user (first sign-in)
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+      if (isNewUser && result.user.email) {
+        try {
+          const response = await fetch('/api/auth/welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: result.user.email, 
+              displayName: result.user.displayName || undefined 
+            })
+          });
+          const emailResult = await response.json();
+          if (emailResult.success) {
+            console.log("Welcome email sent to:", result.user.email);
+          }
+        } catch (emailError) {
+          console.warn("Failed to send welcome email:", emailError);
+        }
+      }
+      
+      return result;
     }
-    
+    return null;
+  } catch (error: any) {
+    console.error("Google redirect result error:", error.code, error.message);
     throw error;
   }
 }

@@ -77,12 +77,8 @@ export default function Signup() {
   const handleGoogleSignUp = async () => {
     try {
       setGoogleLoading(true);
+      // This redirects to Google - page will reload after sign-up
       await signInWithGoogle();
-      toast({
-        title: "Welcome to MyBillPort!",
-        description: "Your account has been created with Google.",
-      });
-      setLocation("/app");
     } catch (err: any) {
       console.error("Google sign-up error:", err.code, err.message);
       toast({
@@ -90,7 +86,6 @@ export default function Signup() {
         description: getFirebaseErrorMessage(err.code),
         variant: "destructive",
       });
-    } finally {
       setGoogleLoading(false);
     }
   };
