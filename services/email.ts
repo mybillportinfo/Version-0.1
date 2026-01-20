@@ -12,8 +12,8 @@ function getCleanApiKey(): string {
   return apiKey;
 }
 
-// Use verified MailerSend trial domain to avoid 401 errors
-const fromEmail = 'mybillport@trial-351ndgwr0p8lzqx8.mlsender.net'; // MailerSend verified domain
+// Use verified MailerSend test domain
+const fromEmail = 'mybillport@test-nrw7gymn9wng2k8e.mlsender.net'; // MailerSend verified domain
 const fromName = process.env.FROM_NAME || 'MyBillPort';
 
 // Create MailerSend client with cleaned API key
