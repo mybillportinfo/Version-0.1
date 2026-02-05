@@ -58,24 +58,29 @@ export async function addBill(userId: string, bill: Omit<Bill, 'id' | 'userId' |
 }
 
 export async function fetchBills(userId: string): Promise<Bill[]> {
-  const q = query(
-    collection(db, "bills"),
-    where("userId", "==", userId),
-    orderBy("dueDate", "asc")
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      userId: data.userId,
-      providerName: data.providerName,
-      billType: data.billType,
-      amount: data.amount,
-      dueDate: data.dueDate.toDate(),
-      createdAt: data.createdAt.toDate(),
-    };
-  });
+  try {
+    const q = query(
+      collection(db, "bills"),
+      where("userId", "==", userId)
+    );
+    const snapshot = await getDocs(q);
+    const bills = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        providerName: data.providerName,
+        billType: data.billType,
+        amount: data.amount,
+        dueDate: data.dueDate?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
+    return bills.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  } catch (error) {
+    console.error('Firestore fetchBills error:', error);
+    throw error;
+  }
 }
 
 export async function deleteBill(billId: string) {
