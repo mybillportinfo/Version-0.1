@@ -6,7 +6,13 @@ MyBillPort is a modern Bill Management OS for people living in Canada to track r
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (January 29, 2026)
+## Recent Changes (February 5, 2026)
+- ✅ Fixed Firestore permission-denied errors blocking bill CRUD operations
+- ✅ Added ID token refresh before Firestore operations for reliable auth
+- ✅ Production-safe Firestore rules enforcing per-user data isolation
+- ✅ Full demo flow working: signup → login → add bill → view bills → logout
+
+## Previous Changes (January 29, 2026)
 - ✅ Premium fintech color palette redesign (navy/slate/muted teal)
 - ✅ Replaced all emerald references with new professional color scheme
 - ✅ Updated buttons with navy primary, slate secondary/outline variants
@@ -70,9 +76,10 @@ Preferred communication style: Simple, everyday language.
 - `/settings` - Profile (real user info), plan, connected accounts, logout
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js
+- **Runtime**: Next.js (App Router, serverless-ready)
 - **Language**: TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: Firebase Firestore (NoSQL, per-user data isolation)
+- **Authentication**: Firebase Auth (email/password, Google OAuth)
 - **Email**: MailerSend for bill reminders
 
 ### Key Features (MVP)
@@ -91,8 +98,16 @@ Preferred communication style: Simple, everyday language.
 - Complex charts/analytics
 
 ## External Dependencies
-- **@neondatabase/serverless**: PostgreSQL connection
-- **drizzle-orm**: Database ORM
-- **wouter**: Lightweight router
+- **firebase**: Firebase SDK (Auth + Firestore)
+- **next**: Next.js framework with App Router
 - **lucide-react**: Icon library
 - **MailerSend**: Email service
+
+## Firebase Configuration
+- **Project ID**: mybillport-8e05a
+- **Firestore Rules**: Production-safe rules enforcing userId matching
+- **Auth Methods**: Email/password, Google OAuth
+- **Environment Variables Required**:
+  - NEXT_PUBLIC_FIREBASE_API_KEY
+  - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  - NEXT_PUBLIC_FIREBASE_APP_ID

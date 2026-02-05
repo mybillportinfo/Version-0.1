@@ -195,6 +195,11 @@ async function fetchBills(userId) {
     }
 }
 async function deleteBill(billId) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        throw new Error('User must be authenticated to delete bills');
+    }
+    await currentUser.getIdToken(true);
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["deleteDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["doc"])(db, "bills", billId));
 }
 }),

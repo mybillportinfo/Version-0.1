@@ -99,6 +99,12 @@ export async function fetchBills(userId: string): Promise<Bill[]> {
 }
 
 export async function deleteBill(billId: string) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('User must be authenticated to delete bills');
+  }
+  
+  await currentUser.getIdToken(true);
   await deleteDoc(doc(db, "bills", billId));
 }
 
