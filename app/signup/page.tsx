@@ -1,9 +1,64 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Mail, Lock, Loader2, Check, X } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Signup() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const { user, signup, error, clearError } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      router.push('/app');
+    }
+  }, [user, router]);
+
+  const passwordChecks = {
+    length: password.length >= 6,
+    match: password === confirmPassword && password.length > 0,
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    
+    if (!email || !password) {
+      setLocalError('Please fill in all fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setLocalError('Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    clearError();
+    
+    try {
+      await signup(email, password);
+      router.push('/app');
+    } catch {
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const displayError = localError || error;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -19,15 +74,107 @@ export default function Signup() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Create Account</h1>
-              <p className="text-slate-400 text-sm">Join MyBillPort today</p>
+              <p className="text-slate-400 text-sm">Start managing your bills</p>
             </div>
           </div>
 
-          <p className="text-slate-400 text-center py-8">
-            Full authentication requires backend integration.
-            <br />
-            <Link href="/" className="text-teal-500 hover:underline mt-2 inline-block">
-              Return to Home
+          {displayError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+              {displayError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+            </div>
+
+            {password && (
+              <div className="bg-slate-700/30 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  {passwordChecks.length ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <X className="w-4 h-4 text-slate-500" />
+                  )}
+                  <span className={passwordChecks.length ? 'text-green-400' : 'text-slate-400'}>
+                    At least 6 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  {passwordChecks.match ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <X className="w-4 h-4 text-slate-500" />
+                  )}
+                  <span className={passwordChecks.match ? 'text-green-400' : 'text-slate-400'}>
+                    Passwords match
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full btn-accent py-3 rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-slate-400 mt-6 text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="text-teal-500 hover:underline">
+              Sign in
             </Link>
           </p>
         </div>

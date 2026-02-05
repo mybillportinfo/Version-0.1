@@ -1,9 +1,42 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from "next/link";
-import { ArrowLeft, Home, Plus, Settings, User, Bell, Shield, LogOut, ChevronRight } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Home, Plus, Settings, User, Bell, Shield, LogOut, ChevronRight, Loader2 } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SettingsPage() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 pb-24">
       {/* Header */}
@@ -21,12 +54,14 @@ export default function SettingsPage() {
         {/* Profile */}
         <div className="bg-white rounded-xl overflow-hidden">
           <div className="p-4 flex items-center gap-4">
-            <div className="w-14 h-14 bg-slate-200 rounded-full flex items-center justify-center">
-              <User className="w-7 h-7 text-slate-500" />
+            <div className="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center">
+              <User className="w-7 h-7 text-teal-600" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-slate-800">Guest User</p>
-              <p className="text-sm text-slate-500">Sign in to save your data</p>
+              <p className="font-semibold text-slate-800">
+                {user.displayName || 'MyBillPort User'}
+              </p>
+              <p className="text-sm text-slate-500">{user.email}</p>
             </div>
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </div>
@@ -70,7 +105,10 @@ export default function SettingsPage() {
         </div>
 
         {/* Logout */}
-        <button className="w-full bg-white rounded-xl p-4 flex items-center gap-4 hover:bg-red-50 transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="w-full bg-white rounded-xl p-4 flex items-center gap-4 hover:bg-red-50 transition-colors"
+        >
           <LogOut className="w-5 h-5 text-red-500" />
           <span className="text-red-500 font-medium">Sign Out</span>
         </button>

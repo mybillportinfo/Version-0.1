@@ -1,9 +1,91 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { ArrowLeft, Home, Plus, Settings } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Home, Plus, Settings, Zap, Wifi, Phone, CreditCard, FileText, Loader2 } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
+import { addBill } from '../lib/firebase';
 
-export default function AddBill() {
+const billCategories = [
+  { id: "hydro", label: "Hydro", icon: Zap, color: "bg-yellow-100 text-yellow-600" },
+  { id: "internet", label: "Internet", icon: Wifi, color: "bg-blue-100 text-blue-600" },
+  { id: "phone", label: "Phone", icon: Phone, color: "bg-green-100 text-green-600" },
+  { id: "subscription", label: "Subscription", icon: CreditCard, color: "bg-purple-100 text-purple-600" },
+  { id: "other", label: "Other", icon: FileText, color: "bg-slate-100 text-slate-600" },
+];
+
+export default function AddBillPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [providerName, setProviderName] = useState('');
+  const [billType, setBillType] = useState('other');
+  const [amount, setAmount] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    
+    if (!user) {
+      setError('You must be logged in');
+      return;
+    }
+    
+    if (!providerName.trim()) {
+      setError('Please enter a bill name');
+      return;
+    }
+    
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+    
+    if (!dueDate) {
+      setError('Please select a due date');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      await addBill(user.uid, {
+        providerName: providerName.trim(),
+        billType,
+        amount: parseFloat(amount),
+        dueDate: new Date(dueDate),
+      });
+      
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/app');
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to add bill:', err);
+      setError('Failed to add bill. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 pb-24">
       {/* Header */}
@@ -18,50 +100,98 @@ export default function AddBill() {
 
       {/* Form */}
       <div className="px-4">
-        <div className="bg-white rounded-xl p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Bill Name</label>
-            <input 
-              type="text" 
-              placeholder="e.g., Toronto Hydro"
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
+        {success ? (
+          <div className="bg-teal-500/10 border border-teal-500/30 text-teal-400 px-4 py-6 rounded-xl text-center">
+            <p className="text-lg font-semibold">Bill added successfully!</p>
+            <p className="text-sm mt-1">Redirecting to dashboard...</p>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-            <select className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option value="">Select category</option>
-              <option value="hydro">Hydro / Electric</option>
-              <option value="internet">Internet</option>
-              <option value="phone">Phone / Mobile</option>
-              <option value="subscription">Subscription</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 space-y-5">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Bill Name</label>
+              <input 
+                type="text"
+                value={providerName}
+                onChange={(e) => setProviderName(e.target.value)}
+                placeholder="e.g., Toronto Hydro"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+              <div className="grid grid-cols-3 gap-2">
+                {billCategories.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = billType === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setBillType(cat.id)}
+                      className={`p-3 rounded-xl flex flex-col items-center transition-all ${
+                        isSelected 
+                          ? "bg-slate-100 border-2 border-teal-500" 
+                          : "bg-slate-50 border-2 border-transparent hover:border-slate-200"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-1.5 ${cat.color}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <span className={`text-xs font-medium ${isSelected ? "text-teal-600" : "text-slate-600"}`}>
+                        {cat.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Amount (CAD)</label>
-            <input 
-              type="number" 
-              placeholder="0.00"
-              step="0.01"
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Amount (CAD)</label>
+              <input 
+                type="number" 
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-            <input 
-              type="date" 
-              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+              <input 
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800"
+              />
+            </div>
 
-          <button className="w-full btn-accent py-3 rounded-lg font-semibold mt-4">
-            Add Bill
-          </button>
-        </div>
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full btn-accent py-3 rounded-lg font-semibold mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Bill'
+              )}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Bottom Navigation */}

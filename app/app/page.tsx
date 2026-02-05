@@ -1,15 +1,54 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from "next/link";
-import { Home, Plus, Settings, Zap, Wifi, CreditCard, Phone, MoreHorizontal } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { Home, Plus, Settings, Zap, Wifi, CreditCard, Phone, MoreHorizontal, Loader2, Trash2 } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
+import { fetchBills, deleteBill, Bill } from '../lib/firebase';
 
 export default function Dashboard() {
-  const bills = [
-    { name: "Toronto Hydro", type: "hydro", amount: 142.50, dueIn: 2, status: "due-soon" },
-    { name: "Rogers Internet", type: "internet", amount: 89.99, dueIn: 8, status: "upcoming" },
-    { name: "Netflix", type: "subscription", amount: 16.99, dueIn: 12, status: "upcoming" },
-    { name: "Bell Mobile", type: "phone", amount: 75.00, dueIn: 15, status: "upcoming" },
-  ];
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadBills();
+    }
+  }, [user]);
+
+  const loadBills = async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const userBills = await fetchBills(user.uid);
+      setBills(userBills);
+    } catch (err) {
+      console.error('Failed to fetch bills:', err);
+      setError('Failed to load bills');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteBill = async (billId: string) => {
+    try {
+      await deleteBill(billId);
+      setBills(bills.filter(b => b.id !== billId));
+    } catch (err) {
+      console.error('Failed to delete bill:', err);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -31,16 +70,40 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "due-soon": return "text-amber-500";
-      case "overdue": return "text-red-500";
-      default: return "text-teal-600";
-    }
+  const getDaysUntilDue = (dueDate: Date) => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const dueSoonCount = bills.filter(b => b.dueIn <= 3).length;
-  const overdueCount = bills.filter(b => b.dueIn < 0).length;
+  const getStatusStyle = (daysUntil: number) => {
+    if (daysUntil < 0) return "text-red-500";
+    if (daysUntil <= 3) return "text-amber-500";
+    return "text-teal-600";
+  };
+
+  if (authLoading || (!user && !authLoading)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      </div>
+    );
+  }
+
+  const dueSoonCount = bills.filter(b => {
+    const days = getDaysUntilDue(b.dueDate);
+    return days >= 0 && days <= 3;
+  }).length;
+  
+  const overdueCount = bills.filter(b => getDaysUntilDue(b.dueDate) < 0).length;
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 pb-24">
@@ -52,7 +115,7 @@ export default function Dashboard() {
           </div>
           <span className="text-white font-semibold text-lg">MyBillPort</span>
         </div>
-        <p className="text-slate-400">Good morning</p>
+        <p className="text-slate-400">{greeting()}</p>
         <p className="text-white text-2xl font-semibold">Here&apos;s your overview</p>
       </div>
 
@@ -74,21 +137,53 @@ export default function Dashboard() {
 
       {/* Bills List */}
       <div className="px-4 space-y-3">
-        <h2 className="text-white font-semibold mb-2">Upcoming Bills</h2>
-        {bills.map((bill, index) => (
-          <div key={index} className="bg-white rounded-xl p-4 flex items-center gap-4">
-            <div className={`w-12 h-12 ${getIconBg(bill.type)} rounded-lg flex items-center justify-center`}>
-              {getIcon(bill.type)}
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-slate-800">{bill.name}</p>
-              <p className={`text-sm ${getStatusStyle(bill.status)}`}>
-                {bill.dueIn <= 0 ? "Overdue" : `Due in ${bill.dueIn} days`}
-              </p>
-            </div>
-            <p className="font-semibold text-slate-800">${bill.amount.toFixed(2)}</p>
+        <h2 className="text-white font-semibold mb-2">Your Bills</h2>
+        
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
           </div>
-        ))}
+        ) : error ? (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        ) : bills.length === 0 ? (
+          <div className="bg-slate-800/50 rounded-xl p-8 text-center border border-slate-700">
+            <p className="text-slate-400 mb-4">No bills yet</p>
+            <Link href="/add-bill" className="btn-accent px-6 py-2 rounded-lg inline-block">
+              Add Your First Bill
+            </Link>
+          </div>
+        ) : (
+          bills.map((bill) => {
+            const daysUntil = getDaysUntilDue(bill.dueDate);
+            return (
+              <div key={bill.id} className="bg-white rounded-xl p-4 flex items-center gap-4">
+                <div className={`w-12 h-12 ${getIconBg(bill.billType)} rounded-lg flex items-center justify-center`}>
+                  {getIcon(bill.billType)}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-800">{bill.providerName}</p>
+                  <p className={`text-sm ${getStatusStyle(daysUntil)}`}>
+                    {daysUntil < 0 
+                      ? `${Math.abs(daysUntil)} days overdue`
+                      : daysUntil === 0 
+                        ? "Due today"
+                        : `Due in ${daysUntil} days`
+                    }
+                  </p>
+                </div>
+                <p className="font-semibold text-slate-800">${bill.amount.toFixed(2)}</p>
+                <button 
+                  onClick={() => bill.id && handleDeleteBill(bill.id)}
+                  className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Bottom Navigation */}
