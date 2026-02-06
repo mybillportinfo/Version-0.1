@@ -6,7 +6,12 @@ MyBillPort is a modern Bill Management OS for people living in Canada to track r
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (February 5, 2026)
+## Recent Changes (February 6, 2026)
+- ✅ Fixed env variable config to support both Replit and Vercel deployment
+- ✅ Improved auth guard on settings page to prevent premature redirects
+- ✅ Updated all contact emails to mybillportinfo@gmail.com
+
+## Previous Changes (February 5, 2026)
 - ✅ Fixed Firestore permission-denied errors blocking bill CRUD operations
 - ✅ Added ID token refresh before Firestore operations for reliable auth
 - ✅ Production-safe Firestore rules enforcing per-user data isolation
