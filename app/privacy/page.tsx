@@ -104,7 +104,7 @@ export default function Privacy() {
               <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
               <li><strong>Data Portability:</strong> Request your data in a portable format</li>
             </ul>
-            <p className="mt-3">To exercise these rights, contact us at privacy@mybillport.com or through your account settings.</p>
+            <p className="mt-3">To exercise these rights, contact us at mybillportinfo@gmail.com or through your account settings.</p>
           </section>
 
           <section>
@@ -132,7 +132,7 @@ export default function Privacy() {
             <p className="mb-3">If you have questions about this Privacy Policy or our privacy practices, please contact us:</p>
             <div className="bg-gray-50 rounded-lg p-4">
               <p><strong>MyBillPort Inc.</strong></p>
-              <p>Email: privacy@mybillport.com</p>
+              <p>Email: mybillportinfo@gmail.com</p>
               <p>Website: www.mybillport.com</p>
             </div>
           </section>

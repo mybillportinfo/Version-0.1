@@ -25,16 +25,12 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (

@@ -82,7 +82,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Contact</h2>
             <p>For questions about these terms, contact us at:</p>
-            <p className="mt-2">Email: support@mybillport.com</p>
+            <p className="mt-2">Email: mybillportinfo@gmail.com</p>
           </section>
         </div>
 
