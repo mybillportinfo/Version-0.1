@@ -1,37 +1,93 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, Timestamp, Firestore } from "firebase/firestore";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, browserLocalPersistence, setPersistence, Auth } from "firebase/auth";
+'use client';
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  Timestamp,
+  Firestore,
+} from "firebase/firestore";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User,
+  browserLocalPersistence,
+  setPersistence,
+  Auth,
+} from "firebase/auth";
+
+function getFirebaseConfig() {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+
+  if (!apiKey || !projectId || !appId) {
+    console.error(
+      `Missing Firebase configuration. Check your environment variables:\n` +
+      `  NEXT_PUBLIC_FIREBASE_API_KEY: ${apiKey ? '✓' : '✗ MISSING'}\n` +
+      `  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${projectId ? '✓' : '✗ MISSING'}\n` +
+      `  NEXT_PUBLIC_FIREBASE_APP_ID: ${appId ? '✓' : '✗ MISSING'}`
+    );
+    return null;
+  }
+
+  return {
+    apiKey,
+    authDomain: `${projectId}.firebaseapp.com`,
+    projectId,
+    storageBucket: `${projectId}.appspot.com`,
+    appId,
+  };
+}
 
 let _app: FirebaseApp | null = null;
 let _db: Firestore | null = null;
 let _auth: Auth | null = null;
+let _initFailed = false;
 
-function getFirebaseApp(): FirebaseApp {
+function getFirebaseApp(): FirebaseApp | null {
+  if (typeof window === 'undefined') return null;
+  if (_initFailed) return null;
   if (_app) return _app;
-  _app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+  if (getApps().length > 0) {
+    _app = getApp();
+    return _app;
+  }
+
+  const config = getFirebaseConfig();
+  if (!config) {
+    _initFailed = true;
+    return null;
+  }
+
+  _app = initializeApp(config);
   return _app;
 }
 
-function getFirebaseDb(): Firestore {
+function getFirebaseDb(): Firestore | null {
   if (_db) return _db;
-  _db = getFirestore(getFirebaseApp());
+  const app = getFirebaseApp();
+  if (!app) return null;
+  _db = getFirestore(app);
   return _db;
 }
 
-function getFirebaseAuth(): Auth {
+function getFirebaseAuth(): Auth | null {
   if (_auth) return _auth;
-  _auth = getAuth(getFirebaseApp());
-  if (typeof window !== 'undefined') {
-    setPersistence(_auth, browserLocalPersistence).catch(console.error);
-  }
+  const app = getFirebaseApp();
+  if (!app) return null;
+  _auth = getAuth(app);
+  setPersistence(_auth, browserLocalPersistence).catch(console.error);
   return _auth;
 }
 
@@ -46,34 +102,47 @@ export interface Bill {
 }
 
 export function registerUser(email: string, password: string) {
-  return createUserWithEmailAndPassword(getFirebaseAuth(), email, password).then(r => r.user);
+  const auth = getFirebaseAuth();
+  if (!auth) return Promise.reject(new Error('Firebase not available'));
+  return createUserWithEmailAndPassword(auth, email, password).then(r => r.user);
 }
 
 export function loginUser(email: string, password: string) {
-  return signInWithEmailAndPassword(getFirebaseAuth(), email, password).then(r => r.user);
+  const auth = getFirebaseAuth();
+  if (!auth) return Promise.reject(new Error('Firebase not available'));
+  return signInWithEmailAndPassword(auth, email, password).then(r => r.user);
 }
 
 export function logoutUser() {
-  return signOut(getFirebaseAuth());
+  const auth = getFirebaseAuth();
+  if (!auth) return Promise.resolve();
+  return signOut(auth);
 }
 
 export function subscribeToAuth(callback: (user: User | null) => void) {
   if (typeof window === 'undefined') {
     return () => {};
   }
-  return onAuthStateChanged(getFirebaseAuth(), callback);
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    callback(null);
+    return () => {};
+  }
+  return onAuthStateChanged(auth, callback);
 }
 
 export async function addBill(userId: string, bill: Omit<Bill, 'id' | 'userId' | 'createdAt'>) {
   const auth = getFirebaseAuth();
+  if (!auth) throw new Error('Firebase not available');
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('User must be authenticated to add bills');
   }
-  
+
   await currentUser.getIdToken(true);
-  
+
   const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not available');
   const docRef = await addDoc(collection(db, "bills"), {
     ...bill,
     userId,
@@ -86,24 +155,26 @@ export async function addBill(userId: string, bill: Omit<Bill, 'id' | 'userId' |
 export async function fetchBills(userId: string): Promise<Bill[]> {
   try {
     const auth = getFirebaseAuth();
+    if (!auth) return [];
     const currentUser = auth.currentUser;
     if (!currentUser) {
       return [];
     }
-    
+
     await currentUser.getIdToken(true);
-    
+
     const db = getFirebaseDb();
+    if (!db) return [];
     const q = query(
       collection(db, "bills"),
       where("userId", "==", userId)
     );
     const snapshot = await getDocs(q);
-    
-    const bills = snapshot.docs.map(doc => {
-      const data = doc.data();
+
+    const bills = snapshot.docs.map(d => {
+      const data = d.data();
       return {
-        id: doc.id,
+        id: d.id,
         userId: data.userId,
         providerName: data.providerName,
         billType: data.billType,
@@ -121,13 +192,15 @@ export async function fetchBills(userId: string): Promise<Bill[]> {
 
 export async function deleteBill(billId: string) {
   const auth = getFirebaseAuth();
+  if (!auth) throw new Error('Firebase not available');
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('User must be authenticated to delete bills');
   }
-  
+
   await currentUser.getIdToken(true);
   const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not available');
   await deleteDoc(doc(db, "bills", billId));
 }
 
