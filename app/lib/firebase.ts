@@ -52,11 +52,9 @@ function getFirebaseConfig() {
 let _app: FirebaseApp | null = null;
 let _db: Firestore | null = null;
 let _auth: Auth | null = null;
-let _initFailed = false;
 
 function getFirebaseApp(): FirebaseApp | null {
   if (typeof window === 'undefined') return null;
-  if (_initFailed) return null;
   if (_app) return _app;
 
   if (getApps().length > 0) {
@@ -66,7 +64,6 @@ function getFirebaseApp(): FirebaseApp | null {
 
   const config = getFirebaseConfig();
   if (!config) {
-    _initFailed = true;
     return null;
   }
 
